@@ -11,7 +11,7 @@ cargo install epistemology
 
 example:
 ```bash
-cd /directory-where-you-unzipped-llama/
+cd /directory-where-you-unzipped-llama.cpp/
 epistemology ./magic.gguf
 
 Listening with GET and POST on http://localhost:8080/prompt
