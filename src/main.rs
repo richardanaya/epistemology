@@ -46,13 +46,12 @@ async fn handle_post(data: web::Data<AppState>, body: String) -> impl Responder 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // get model path from command line
-    let model_path = std::env::args().nth(1).unwrap_or_else(|| {
-        println!("Usage: {} <model_path> <llama_cpp_bin_path>", std::env::args().next().unwrap());
+    let bin_path = std::env::args().nth(1).unwrap_or_else(|| {
+        println!("Usage: {} <llama_cpp_bin_path> <model_path>", std::env::args().next().unwrap());
         std::process::exit(1);
     });
-    let bin_path = std::env::args().nth(2).unwrap_or_else(|| {
-        println!("Usage: {} <model_path> <llama_cpp_bin_path", std::env::args().next().unwrap());
+    let model_path = std::env::args().nth(2).unwrap_or_else(|| {
+        println!("Usage: {} <llama_cpp_bin_path> <model_path>", std::env::args().next().unwrap());
         std::process::exit(1);
     });
     let app_data = web::Data::new(AppState {bin_path, model_path });

@@ -3,7 +3,7 @@ name = "epistemology"
 version = "0.1.0"
 edition = "2021"
 description = "A simple a clear way of hosting llama.cpp as a private API"
-license = MIT
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

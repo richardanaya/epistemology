@@ -420,6 +420,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "epistemology"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "futures",
+ "serde",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1034,17 +1045,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "testproc"
-version = "0.1.0"
-dependencies = [
- "actix-web",
- "futures",
- "serde",
- "tokio",
- "tokio-stream",
 ]
 
 [[package]]
