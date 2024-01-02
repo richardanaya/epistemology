@@ -1,0 +1,15 @@
+[package]
+name = "epistemology"
+version = "0.1.0"
+edition = "2021"
+description = "A simple a clear way of hosting llama.cpp as a private API"
+license = MIT
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4.4.1"
+futures = "0.3.30"
+serde = { version = "1.0", features = ["derive"] }
+tokio = "1.35.1"
+tokio-stream = "0.1.14"
