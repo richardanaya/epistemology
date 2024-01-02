@@ -13,16 +13,18 @@ struct AiPrompt {
 }
 
 struct AppState {
+    bin_path: String,
     model_path: String,
 }
 
-fn execute_ai(model_path: &str, prompt: String) -> impl Responder {
+fn execute_ai(bin_path: &str, model_path: &str, prompt: String) -> impl Responder {
     let (tx, rx) = mpsc::unbounded_channel();
 
+    let b = bin_path.to_string().clone();
     let m = model_path.to_string().clone();
     // Spawn a thread to execute the command and send output to the channel
     thread::spawn(move || {
-        execute_llm(&m, prompt, tx);
+        execute_llm(&b, &m, prompt, tx);
     });
 
     // Convert the synchronous Flume receiver into an asynchronous stream
@@ -35,21 +37,25 @@ fn execute_ai(model_path: &str, prompt: String) -> impl Responder {
 }
 
 async fn handle_get(data: web::Data<AppState>, query: web::Query<AiPrompt>) -> impl Responder {
-    execute_ai(&data.model_path, query.prompt.clone())
+    execute_ai(&data.bin_path, &data.model_path, query.prompt.clone())
 }
 
 async fn handle_post(data: web::Data<AppState>, body: String) -> impl Responder {
-    execute_ai(&data.model_path, body)
+    execute_ai(&data.bin_path, &data.model_path, body)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // get model path from command line
     let model_path = std::env::args().nth(1).unwrap_or_else(|| {
-        println!("Usage: {} <model_path>", std::env::args().next().unwrap());
+        println!("Usage: {} <model_path> <llama_cpp_bin_path>", std::env::args().next().unwrap());
         std::process::exit(1);
     });
-    let app_data = web::Data::new(AppState { model_path });
+    let bin_path = std::env::args().nth(2).unwrap_or_else(|| {
+        println!("Usage: {} <model_path> <llama_cpp_bin_path", std::env::args().next().unwrap());
+        std::process::exit(1);
+    });
+    let app_data = web::Data::new(AppState {bin_path, model_path });
 
     println!(
         r#"Listening with GET and POST on http://localhost:8080/prompt
@@ -70,11 +76,11 @@ Examples:
     .await
 }
 
-fn execute_llm(model_path: &str, prompt: String, sender: mpsc::UnboundedSender<String>) {
+fn execute_llm(bin_path: &str, model_path: &str, prompt: String, sender: mpsc::UnboundedSender<String>) {
     let prompt = format!("\"{}\"", prompt);
     let vec_cmd = vec![
         "/C",
-        "..\\main.exe",
+        bin_path,
         "-m",
         model_path,
         "-n",
