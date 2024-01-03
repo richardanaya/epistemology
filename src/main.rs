@@ -14,15 +14,15 @@ use std::path::PathBuf;
 struct Cli {
 
     /// Sets a custom config file
-    #[arg(short, long, value_name = "MODEL")]
+    #[arg(short, value_name = "GGUF_MODEL")]
     model: PathBuf,
 
     /// Sets a custom config file
-    #[arg(short, long, value_name = "LLAMMA_CPP_PATH")]
+    #[arg(short, value_name = "LLAMMA_CPP_MAIN_EXE_PATH")]
     path: PathBuf,
 
      /// Sets a custom config file
-     #[arg(short, long, value_name = "UI_PATH")]
+     #[arg(short, value_name = "UI_PATH")]
      ui: Option<PathBuf>,
 }
 
