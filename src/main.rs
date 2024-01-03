@@ -24,6 +24,13 @@ struct EpistemologyCliArgs {
     )]
     path: PathBuf,
 
+    #[arg(
+        short,
+        value_name = "GRAMMAR_PATH",
+        help = "Path to grammar file (optional)"
+    )]
+    grammar: Option<PathBuf>,
+
     #[arg(short, value_name = "UI_PATH", help = "Path to UI static files folder")]
     ui: Option<PathBuf>,
 
@@ -132,7 +139,7 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
     };
 
     let n_str = args.n.unwrap_or(128).to_string();
-    let vec_cmd = vec![
+    let mut vec_cmd = vec![
         "-m",
         &full_model_path,
         "-n",
@@ -143,6 +150,16 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
         "-p",
         prompt.as_str(),
     ];
+
+    let full_grammar_path;
+    if let Some(grammar) = &args.grammar {
+        full_grammar_path = match fs::canonicalize(grammar) {
+            Ok(full_path) => full_path.display().to_string(),
+            Err(err) => panic!("Failed to execute AI: {}", err),
+        };
+        vec_cmd.push("--grammar");
+        vec_cmd.push(&full_grammar_path);
+    }
 
     let mut child = Command::new(&args.model)
         .args(&vec_cmd)
