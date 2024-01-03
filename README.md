@@ -18,3 +18,15 @@ Examples:
     * http://localhost:8080/text-completion?prompt=hello
     * curl -X POST -d "hello" http://localhost:8080/text-completion
 ```
+
+You can also run your own web interface from a static path
+
+```bash
+epistemology -p ~/llama/main -m ./magic.gguf
+
+Serving UI on http://localhost:8080/ui/ from ./my-web-interface
+Listening with GET and POST on http://localhost:8080/text-completion
+Examples:
+    * http://localhost:8080/text-completion?prompt=hello
+    * curl -X POST -d "hello" http://localhost:8080/text-completion
+```
