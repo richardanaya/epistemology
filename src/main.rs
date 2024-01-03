@@ -147,8 +147,6 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
         "--log-disable",
         "--simple-io",
         "-e",
-        "-p",
-        prompt.as_str(),
     ];
 
     let full_grammar_path;
@@ -161,7 +159,11 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
         vec_cmd.push(&full_grammar_path);
     }
 
-    println!("Running: {}", &vec_cmd.join(" "));
+    println!("Running LLM: {} ...", &vec_cmd.join(" "));
+
+    // don't show prompt in commandline
+    vec_cmd.push("-p");
+    vec_cmd.push(prompt.as_str());
 
     let mut child = Command::new(&args.path)
         .args(&vec_cmd)
