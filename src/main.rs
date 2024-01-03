@@ -80,7 +80,7 @@ async fn main() -> std::io::Result<()> {
         r#"Listening with GET and POST on http://localhost:8080/api/text-completion
 Examples:
     * http://localhost:8080/api/text-completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous%20qoute:" http://localhost:8080/api/text-completion"#
+    * curl -X POST -d "famous qoute:" http://localhost:8080/api/text-completion"#
     );
 
     HttpServer::new(move || {
