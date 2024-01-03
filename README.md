@@ -11,10 +11,10 @@ cargo install epistemology
 
 example:
 ```bash
-epistemology ~/llama/main ./magic.gguf
+epistemology -p ~/llama/main -m ./magic.gguf
 
-Listening with GET and POST on http://localhost:8080/prompt
+Listening with GET and POST on http://localhost:8080/text-completion
 Examples:
-    * http://localhost:8080/prompt?prompt=hello
-    * curl -X POST -d "hello" http://localhost:8080/prompt
+    * http://localhost:8080/text-completion?prompt=hello
+    * curl -X POST -d "hello" http://localhost:8080/text-completion
 ```

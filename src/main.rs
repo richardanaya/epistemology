@@ -6,6 +6,25 @@ use std::process::{Command, Stdio};
 use std::thread;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
+use clap::{Parser};
+use std::path::PathBuf;
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+
+    /// Sets a custom config file
+    #[arg(short, long, value_name = "MODEL")]
+    model: PathBuf,
+
+    /// Sets a custom config file
+    #[arg(short, long, value_name = "LLAMMA_CPP_PATH")]
+    path: PathBuf,
+
+     /// Sets a custom config file
+     #[arg(short, long, value_name = "UI_PATH")]
+     ui: Option<PathBuf>,
+}
 
 #[derive(Deserialize)]
 struct AiPrompt {
@@ -46,29 +65,31 @@ async fn handle_post(data: web::Data<AppState>, body: String) -> impl Responder 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let bin_path = std::env::args().nth(1).unwrap_or_else(|| {
-        println!("Usage: {} <llama_cpp_bin_path> <model_path>", std::env::args().next().unwrap());
-        std::process::exit(1);
-    });
-    let model_path = std::env::args().nth(2).unwrap_or_else(|| {
-        println!("Usage: {} <llama_cpp_bin_path> <model_path>", std::env::args().next().unwrap());
-        std::process::exit(1);
-    });
-    let app_data = web::Data::new(AppState {bin_path, model_path });
+    let cli:Cli = Cli::parse();
+
+    let app_data = web::Data::new(AppState {bin_path:cli.path.display().to_string(), model_path:cli.model.display().to_string() });
 
     println!(
-        r#"Listening with GET and POST on http://localhost:8080/prompt
+        r#"Listening with GET and POST on http://localhost:8080/text-completion
 Examples:
-    * http://localhost:8080/prompt?prompt=hello
-    * curl -X POST -d "hello" http://localhost:8080/prompt"#
+    * http://localhost:8080/text-completion?prompt=hello
+    * curl -X POST -d "hello" http://localhost:8080/text-completion"#
     );
+    
 
     HttpServer::new(move || {
-        App::new().app_data(app_data.clone()).service(
+        let mut a =App::new().app_data(app_data.clone()).service(
             web::resource("/prompt")
                 .route(web::get().to(handle_get))
                 .route(web::post().to(handle_post)),
-        )
+        );
+
+        if let Some(ui_path) = &cli.ui {
+            println!("Serving UI from {}", ui_path.display());
+            a = a.service(actix_files::Files::new("/ui", ui_path.display().to_string()).index_file("index.html"));
+        }
+
+        a
     })
     .bind("localhost:8080")?
     .run()
