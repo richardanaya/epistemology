@@ -88,7 +88,6 @@ Examples:
         );
 
         if let Some(ui_path) = &cli.ui {
-            println!("Serving UI from {}", ui_path.display());
             a = a.service(actix_files::Files::new("/ui", ui_path.display().to_string()).index_file("index.html"));
         }
 
