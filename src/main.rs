@@ -14,17 +14,26 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 #[derive(Parser, Clone)]
 #[command(author, version, about, long_about = None)]
 struct EpistemologyCliArgs {
-    /// Sets a custom config file
-    #[arg(short, value_name = "GGUF_MODEL")]
+    #[arg(short, value_name = "GGUF_MODEL", help = "Path to GGUF model")]
     model: PathBuf,
 
-    /// Sets a custom config file
-    #[arg(short, value_name = "LLAMMA_CPP_MAIN_EXE_PATH")]
+    #[arg(
+        short,
+        value_name = "LLAMMA_CPP_MAIN_EXE_PATH",
+        help = "Path to LLAMMA CPP main executable"
+    )]
     path: PathBuf,
 
-    /// Sets a custom config file
-    #[arg(short, value_name = "UI_PATH")]
+    #[arg(short, value_name = "UI_PATH", help = "Path to UI static files folder")]
     ui: Option<PathBuf>,
+
+    // Output length with default 128
+    #[arg(
+        short,
+        value_name = "OUTPUT_LENGTH",
+        help = "Output length of LLM generation"
+    )]
+    n: Option<u32>,
 }
 
 #[derive(Deserialize)]
@@ -36,11 +45,11 @@ async fn handle_get(
     data: web::Data<EpistemologyCliArgs>,
     query: web::Query<TextCompletationRequestQuery>,
 ) -> impl Responder {
-    run_streaming_llm(&data.path, &data.model, query.prompt.clone())
+    run_streaming_llm(&data, query.prompt.clone())
 }
 
 async fn handle_post(data: web::Data<EpistemologyCliArgs>, body: String) -> impl Responder {
-    run_streaming_llm(&data.path, &data.model, body)
+    run_streaming_llm(&data, body)
 }
 
 #[actix_web::main]
@@ -97,14 +106,13 @@ Examples:
     .await
 }
 
-fn run_streaming_llm(bin_path: &PathBuf, model_path: &PathBuf, prompt: String) -> impl Responder {
+fn run_streaming_llm(args: &EpistemologyCliArgs, prompt: String) -> impl Responder {
     let (tx, rx) = mpsc::unbounded_channel();
 
-    let b = bin_path.clone();
-    let m = model_path.clone();
+    let a = args.clone();
     // Spawn a thread to execute the command and send output to the channel
     thread::spawn(move || {
-        run_llama(&b, &m, prompt, tx);
+        run_llama(&a, prompt, tx);
     });
 
     // Convert the synchronous Flume receiver into an asynchronous stream
@@ -116,23 +124,19 @@ fn run_streaming_llm(bin_path: &PathBuf, model_path: &PathBuf, prompt: String) -
         .streaming(async_stream)
 }
 
-fn run_llama(
-    bin_path: &PathBuf,
-    model_path: &PathBuf,
-    prompt: String,
-    sender: mpsc::UnboundedSender<String>,
-) {
+fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::UnboundedSender<String>) {
     let prompt = format!("\"{}\"", prompt);
-    let full_model_path = match fs::canonicalize(model_path) {
+    let full_model_path = match fs::canonicalize(&args.path) {
         Ok(full_path) => full_path.display().to_string(),
         Err(err) => panic!("Failed to execute AI: {}", err),
     };
 
+    let n_str = args.n.unwrap_or(128).to_string();
     let vec_cmd = vec![
         "-m",
         &full_model_path,
         "-n",
-        "128",
+        &n_str,
         "--log-disable",
         "--simple-io",
         "-e",
@@ -140,7 +144,7 @@ fn run_llama(
         prompt.as_str(),
     ];
 
-    let mut child = Command::new(bin_path)
+    let mut child = Command::new(&args.model)
         .args(&vec_cmd)
         .stdout(Stdio::piped())
         .spawn()
