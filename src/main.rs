@@ -70,7 +70,7 @@ async fn main() -> std::io::Result<()> {
     let app_data = web::Data::new(AppState {bin_path:cli.path.display().to_string(), model_path:cli.model.display().to_string() });
 
     if let Some(ui) = &cli.ui {
-        println!("Serving UI on http://localhost:8080/ui from {}", ui.display().to_string());
+        println!("Serving UI on http://localhost:8080/ui/ from {}", ui.display().to_string());
     }
     println!(
         r#"Listening with GET and POST on http://localhost:8080/text-completion
