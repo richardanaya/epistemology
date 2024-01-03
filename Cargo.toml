@@ -1,6 +1,6 @@
 [package]
 name = "epistemology"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "A simple and clear way of hosting llama.cpp as a private HTTP API"
 license = "MIT"
