@@ -133,7 +133,7 @@ fn run_streaming_llm(args: &EpistemologyCliArgs, prompt: String) -> impl Respond
 
 fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::UnboundedSender<String>) {
     let prompt = format!("\"{}\"", prompt);
-    let full_model_path = match fs::canonicalize(&args.path) {
+    let full_model_path = match fs::canonicalize(&args.model) {
         Ok(full_path) => full_path.display().to_string(),
         Err(err) => panic!("Failed to execute AI: {}", err),
     };
@@ -161,7 +161,9 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
         vec_cmd.push(&full_grammar_path);
     }
 
-    let mut child = Command::new(&args.model)
+    println!("Running: {}", &vec_cmd.join(" "));
+
+    let mut child = Command::new(&args.path)
         .args(&vec_cmd)
         .stdout(Stdio::piped())
         .spawn()
