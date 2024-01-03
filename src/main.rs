@@ -1,5 +1,6 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use clap::Parser;
+use core::panic;
 use futures::StreamExt;
 use serde::Deserialize;
 use std::fs;
@@ -10,9 +11,9 @@ use std::thread;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 #[command(author, version, about, long_about = None)]
-struct Cli {
+struct EpistemologyCliArgs {
     /// Sets a custom config file
     #[arg(short, value_name = "GGUF_MODEL")]
     model: PathBuf,
@@ -27,57 +28,29 @@ struct Cli {
 }
 
 #[derive(Deserialize)]
-struct AiPrompt {
+struct TextCompletationRequestQuery {
     prompt: String,
 }
 
-struct AppState {
-    bin_path: String,
-    model_path: String,
+async fn handle_get(
+    data: web::Data<EpistemologyCliArgs>,
+    query: web::Query<TextCompletationRequestQuery>,
+) -> impl Responder {
+    run_streaming_llm(&data.path, &data.model, query.prompt.clone())
 }
 
-fn execute_ai(bin_path: &str, model_path: &str, prompt: String) -> impl Responder {
-    let (tx, rx) = mpsc::unbounded_channel();
-
-    let b = bin_path.to_string().clone();
-    let m = model_path.to_string().clone();
-    // Spawn a thread to execute the command and send output to the channel
-    thread::spawn(move || {
-        execute_llm(&b, &m, prompt, tx);
-    });
-
-    // Convert the synchronous Flume receiver into an asynchronous stream
-    let async_stream = UnboundedReceiverStream::from(rx)
-        .map(|line| Ok::<_, actix_web::Error>(web::Bytes::from(line)));
-
-    HttpResponse::Ok()
-        .content_type("text/plain")
-        .streaming(async_stream)
-}
-
-async fn handle_get(data: web::Data<AppState>, query: web::Query<AiPrompt>) -> impl Responder {
-    execute_ai(&data.bin_path, &data.model_path, query.prompt.clone())
-}
-
-async fn handle_post(data: web::Data<AppState>, body: String) -> impl Responder {
-    execute_ai(&data.bin_path, &data.model_path, body)
+async fn handle_post(data: web::Data<EpistemologyCliArgs>, body: String) -> impl Responder {
+    run_streaming_llm(&data.path, &data.model, body)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let cli: Cli = Cli::parse();
+    let cli: EpistemologyCliArgs = EpistemologyCliArgs::parse();
 
-    let app_data = web::Data::new(AppState {
-        bin_path: match fs::canonicalize(cli.path) {
-            Ok(full_path) => full_path.display().to_string(),
-            Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::Other, err)),
-        },
-        model_path: match fs::canonicalize(cli.model) {
-            Ok(full_path) => full_path.display().to_string(),
-            Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::Other, err)),
-        },
-    });
+    // let's make these parameters available to the web server for all requests to use
+    let app_data = web::Data::new(cli.clone());
 
+    // let's print out some helpful information for the user
     if let Some(ui) = &cli.ui {
         println!(
             "Serving UI on http://localhost:8080/ui/ from {}",
@@ -101,6 +74,7 @@ Examples:
                 .route(web::post().to(handle_post)),
         );
 
+        // let's serve the UI if the user provided a path to a static folder of files
         if let Some(ui_path) = &cli.ui {
             a = a.service(
                 actix_files::Files::new(
@@ -123,16 +97,40 @@ Examples:
     .await
 }
 
-fn execute_llm(
-    bin_path: &str,
-    model_path: &str,
+fn run_streaming_llm(bin_path: &PathBuf, model_path: &PathBuf, prompt: String) -> impl Responder {
+    let (tx, rx) = mpsc::unbounded_channel();
+
+    let b = bin_path.clone();
+    let m = model_path.clone();
+    // Spawn a thread to execute the command and send output to the channel
+    thread::spawn(move || {
+        run_llama(&b, &m, prompt, tx);
+    });
+
+    // Convert the synchronous Flume receiver into an asynchronous stream
+    let async_stream = UnboundedReceiverStream::from(rx)
+        .map(|line| Ok::<_, actix_web::Error>(web::Bytes::from(line)));
+
+    HttpResponse::Ok()
+        .content_type("text/plain")
+        .streaming(async_stream)
+}
+
+fn run_llama(
+    bin_path: &PathBuf,
+    model_path: &PathBuf,
     prompt: String,
     sender: mpsc::UnboundedSender<String>,
 ) {
     let prompt = format!("\"{}\"", prompt);
+    let full_model_path = match fs::canonicalize(model_path) {
+        Ok(full_path) => full_path.display().to_string(),
+        Err(err) => panic!("Failed to execute AI: {}", err),
+    };
+
     let vec_cmd = vec![
         "-m",
-        model_path,
+        &full_model_path,
         "-n",
         "128",
         "--log-disable",
