@@ -22,9 +22,20 @@ Examples:
 You can also run your own web interface from a static path
 
 ```bash
-epistemology -p ~/llama/main -m ./magic.gguf
+epistemology -p ~/llama/main -m ./magic.gguf -u ./my-web-interface
 
 Serving UI on http://localhost:8080/ui/ from ./my-web-interface
+Listening with GET and POST on http://localhost:8080/text-completion
+Examples:
+    * http://localhost:8080/text-completion?prompt=hello
+    * curl -X POST -d "hello" http://localhost:8080/text-completion
+```
+
+You can also constrain the output grammar with *.gbnf files for things like JSON output
+
+```bash
+epistemology -p ~/llama/main -m ./magic.gguf -g ./json.gbnf
+
 Listening with GET and POST on http://localhost:8080/text-completion
 Examples:
     * http://localhost:8080/text-completion?prompt=hello
