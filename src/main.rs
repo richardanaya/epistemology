@@ -69,7 +69,7 @@ async fn main() -> std::io::Result<()> {
     // let's print out some helpful information for the user
     if let Some(ui) = &cli.ui {
         println!(
-            "Serving UI on http://localhost:8080/ui/ from {}",
+            "Serving UI on http://localhost:8080/ from {}",
             match fs::canonicalize(ui) {
                 Ok(full_path) => full_path.display().to_string(),
                 Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::Other, err)),
@@ -77,15 +77,15 @@ async fn main() -> std::io::Result<()> {
         );
     }
     println!(
-        r#"Listening with GET and POST on http://localhost:8080/text-completion
+        r#"Listening with GET and POST on http://localhost:8080/api/text-completion
 Examples:
-    * http://localhost:8080/text-completion?prompt=hello
-    * curl -X POST -d "hello" http://localhost:8080/text-completion"#
+    * http://localhost:8080/api/text-completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous%20qoute:" http://localhost:8080/api/text-completion"#
     );
 
     HttpServer::new(move || {
         let mut a = App::new().app_data(app_data.clone()).service(
-            web::resource("/text-completion")
+            web::resource("/api/text-completion")
                 .route(web::get().to(handle_get))
                 .route(web::post().to(handle_post)),
         );
@@ -94,7 +94,7 @@ Examples:
         if let Some(ui_path) = &cli.ui {
             a = a.service(
                 actix_files::Files::new(
-                    "/ui",
+                    "/",
                     match fs::canonicalize(ui_path) {
                         Ok(full_path) => full_path.display().to_string(),
                         Err(err) => {
@@ -173,7 +173,12 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
 
     let stdout = BufReader::new(child.stdout.take().unwrap());
 
+    let mut skip_first_line = true;
     for line in stdout.lines().flatten() {
+        if skip_first_line {
+            skip_first_line = false;
+            continue;
+        }
         sender.send(line).unwrap();
     }
 }
