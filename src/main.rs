@@ -157,7 +157,7 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
             Ok(full_path) => full_path.display().to_string(),
             Err(err) => panic!("Failed to execute AI: {}", err),
         };
-        vec_cmd.push("--grammar");
+        vec_cmd.push("--grammar-file");
         vec_cmd.push(&full_grammar_path);
     }
 
