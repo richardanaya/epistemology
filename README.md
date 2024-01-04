@@ -11,7 +11,6 @@ Privacy goals:
 
 The goal of this project is to make a completely clear and visible way to run a server locally. The code for how this runs is as minimal as possible so you can understand exactly what you are running.
 
-
 ```
 cargo install epistemology
 ```
