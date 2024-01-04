@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use clap::Parser;
 use core::panic;
@@ -84,7 +85,10 @@ Examples:
     );
 
     HttpServer::new(move || {
-        let mut a = App::new().app_data(app_data.clone()).service(
+        let cors = Cors::default()
+            .allowed_origin_fn(|_, _req_head| true)
+            .allowed_methods(vec!["GET", "POST"]);
+        let mut a = App::new().app_data(app_data.clone()).wrap(cors).service(
             web::resource("/api/text-completion")
                 .route(web::get().to(handle_get))
                 .route(web::post().to(handle_post)),
