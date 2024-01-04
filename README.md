@@ -3,6 +3,7 @@
 A simple way to run a [llama.cpp](https://github.com/ggerganov/llama.cpp) executable via a local private HTTP API.
 
 Privacy goals:
+* server is stateless
 * always run on localhost only
 * never write logs
 * never put prompts in console logs
