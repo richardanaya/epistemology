@@ -136,22 +136,13 @@ fn run_streaming_llm(args: &EpistemologyCliArgs, prompt: String) -> impl Respond
 }
 
 fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::UnboundedSender<String>) {
-    let prompt = format!("\"{}\"", prompt);
     let full_model_path = match fs::canonicalize(&args.model) {
         Ok(full_path) => full_path.display().to_string(),
         Err(err) => panic!("Failed to execute AI: {}", err),
     };
 
     let n_str = args.n.unwrap_or(128).to_string();
-    let mut vec_cmd = vec![
-        "-m",
-        &full_model_path,
-        "-n",
-        &n_str,
-        "--log-disable",
-        "--simple-io",
-        "-e",
-    ];
+    let mut vec_cmd = vec!["-m", &full_model_path, "-n", &n_str, "--log-disable"];
 
     let full_grammar_path;
     if let Some(grammar) = &args.grammar {
@@ -177,12 +168,15 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
 
     let stdout = BufReader::new(child.stdout.take().unwrap());
 
-    let mut skip_first_line = true;
-    for line in stdout.lines().flatten() {
-        if skip_first_line {
-            skip_first_line = false;
-            continue;
+    let lines: Vec<_> = stdout.lines().flatten().collect();
+    let total_lines = lines.len();
+    for (i, line) in lines.iter().enumerate() {
+        let is_last = i == total_lines - 1;
+
+        if is_last {
+            sender.send(line.clone()).unwrap();
+        } else {
+            sender.send(line.clone() + "\n").unwrap();
         }
-        sender.send(line).unwrap();
     }
 }
