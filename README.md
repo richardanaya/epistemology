@@ -1,9 +1,15 @@
 # Epistemology
 
-A simple way to run a [llama.cpp](https://github.com/ggerganov/llama.cpp) executable via a local private API.
+A simple way to run a [llama.cpp](https://github.com/ggerganov/llama.cpp) executable via a local private HTTP API.
 
-The goal of this project is to make a completely clear and visible way to run a server locally. The code for how this runs is as minimal as possible.
+Privacy goals:
+* server is stateless
+* always run on localhost only
+* never write logs
+* never put prompts in console logs
+* **MIT** license so you can modify this to your specific needs at whim
 
+The goal of this project is to make a completely clear and visible way to run a server locally. The code for how this runs is as minimal as possible so you can understand exactly what you are running.
 
 ```
 cargo install epistemology

@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use clap::Parser;
 use core::panic;
@@ -92,7 +93,10 @@ Examples:
     );
 
     HttpServer::new(move || {
-        let mut a = App::new().app_data(app_data.clone()).service(
+        let cors = Cors::default()
+            .allowed_origin_fn(|_, _req_head| true)
+            .allowed_methods(vec!["GET", "POST"]);
+        let mut a = App::new().app_data(app_data.clone()).wrap(cors).service(
             web::resource("/api/text-completion")
                 .route(web::get().to(handle_get))
                 .route(web::post().to(handle_post)),
@@ -140,22 +144,13 @@ fn run_streaming_llm(args: &EpistemologyCliArgs, prompt: String) -> impl Respond
 }
 
 fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::UnboundedSender<String>) {
-    let prompt = format!("\"{}\"", prompt);
     let full_model_path = match fs::canonicalize(&args.model) {
         Ok(full_path) => full_path.display().to_string(),
         Err(err) => panic!("Failed to execute AI: {}", err),
     };
 
     let n_str = args.num_tokens_output.unwrap_or(128).to_string();
-    let mut vec_cmd = vec![
-        "-m",
-        &full_model_path,
-        "-n",
-        &n_str,
-        "--log-disable",
-        "--simple-io",
-        "-e",
-    ];
+    let mut vec_cmd = vec!["-m", &full_model_path, "-n", &n_str, "--log-disable"];
 
     let full_grammar_path;
     if let Some(grammar) = &args.grammar {
@@ -181,12 +176,15 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
 
     let stdout = BufReader::new(child.stdout.take().unwrap());
 
-    let mut skip_first_line = true;
-    for line in stdout.lines().flatten() {
-        if skip_first_line {
-            skip_first_line = false;
-            continue;
+    let lines: Vec<_> = stdout.lines().flatten().collect();
+    let total_lines = lines.len();
+    for (i, line) in lines.iter().enumerate() {
+        let is_last = i == total_lines - 1;
+
+        if is_last {
+            sender.send(line.clone()).unwrap();
+        } else {
+            sender.send(line.clone() + "\n").unwrap();
         }
-        sender.send(line).unwrap();
     }
 }
