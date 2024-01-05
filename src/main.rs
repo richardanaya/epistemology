@@ -22,7 +22,7 @@ struct EpistemologyCliArgs {
         value_name = "LLAMMA_CPP_MAIN_EXE_PATH",
         help = "Path to LLAMMA CPP main executable"
     )]
-    path: PathBuf,
+    exe_path: PathBuf,
 
     #[arg(
         short,
@@ -40,7 +40,11 @@ struct EpistemologyCliArgs {
         value_name = "OUTPUT_LENGTH",
         help = "Output length of LLM generation"
     )]
-    n: Option<u32>,
+    num_tokens_output: Option<u32>,
+
+    // Port to serve on
+    #[arg(short, value_name = "PORT", help = "Port to serve on")]
+    port: Option<u16>,
 }
 
 #[derive(Deserialize)]
@@ -63,13 +67,16 @@ async fn handle_post(data: web::Data<EpistemologyCliArgs>, body: String) -> impl
 async fn main() -> std::io::Result<()> {
     let cli: EpistemologyCliArgs = EpistemologyCliArgs::parse();
 
+    let port = cli.port.unwrap_or(8080);
+
     // let's make these parameters available to the web server for all requests to use
     let app_data = web::Data::new(cli.clone());
 
     // let's print out some helpful information for the user
     if let Some(ui) = &cli.ui {
         println!(
-            "Serving UI on http://localhost:8080/ from {}",
+            "Serving UI on http://localhost:{}/ from {}",
+            port,
             match fs::canonicalize(ui) {
                 Ok(full_path) => full_path.display().to_string(),
                 Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::Other, err)),
@@ -77,10 +84,11 @@ async fn main() -> std::io::Result<()> {
         );
     }
     println!(
-        r#"Listening with GET and POST on http://localhost:8080/api/text-completion
+        r#"Listening with GET and POST on http://localhost:{}/api/text-completion
 Examples:
-    * http://localhost:8080/api/text-completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous qoute:" http://localhost:8080/api/text-completion"#
+    * http://localhost:{}/api/text-completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous qoute:" http://localhost:{}/api/text-completion"#,
+        port, port, port
     );
 
     HttpServer::new(move || {
@@ -108,7 +116,7 @@ Examples:
 
         a
     })
-    .bind("localhost:8080")?
+    .bind(format!("localhost:{}", port))?
     .run()
     .await
 }
@@ -138,7 +146,7 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
         Err(err) => panic!("Failed to execute AI: {}", err),
     };
 
-    let n_str = args.n.unwrap_or(128).to_string();
+    let n_str = args.num_tokens_output.unwrap_or(128).to_string();
     let mut vec_cmd = vec![
         "-m",
         &full_model_path,
@@ -165,7 +173,7 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
     vec_cmd.push("-p");
     vec_cmd.push(prompt.as_str());
 
-    let mut child = Command::new(&args.path)
+    let mut child = Command::new(&args.exe_path)
         .args(&vec_cmd)
         .stdout(Stdio::piped())
         .spawn()
