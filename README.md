@@ -15,6 +15,9 @@ The goal of this project is to make a completely clear and visible way to run a 
 cargo install epistemology
 ```
 
+<img width="1056" alt="Screenshot 2024-01-07 at 12 04 16 AM" src="https://github.com/richardanaya/epistemology/assets/294042/e4020db2-562f-4773-be39-be9226a81674">
+
+
 example:
 ```bash
 epistemology -p ~/llama/main -e ./magic.gguf
