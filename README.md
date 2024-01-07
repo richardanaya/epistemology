@@ -88,7 +88,7 @@ epistemology -p ~/llama/main -e ./magic.gguf -j ./schema.json
 
 We can now ask the AI questions and now get answers constrained to our JSON format. Since a lot of metadata is lost during conversion to an AI grammar, we should re-iterate in the system prompt what we want to guide the generation better.
 
-```json
+```text
 HTTP POST http://localhost:8080/api/text-completion
 
 [system]
