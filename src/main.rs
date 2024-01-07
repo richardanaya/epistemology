@@ -181,7 +181,7 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
             Ok(full_path) => full_path.display().to_string(),
             Err(err) => panic!("Failed to execute AI: {}", err),
         };
-        let json_schema_str = fs::read_to_string(&full_json_schema_path).unwrap();
+        let json_schema_str = fs::read_to_string(full_json_schema_path).unwrap();
         let g = Grammar::from_json_schema(&json_schema_str);
         if let Err(err) = g {
             panic!("Failed to execute AI: {}", err);
