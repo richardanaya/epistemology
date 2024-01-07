@@ -565,7 +565,7 @@ dependencies = [
 
 [[package]]
 name = "epistemology"
-version = "0.2.16"
+version = "0.2.17"
 dependencies = [
  "actix-cors",
  "actix-files",
@@ -700,9 +700,9 @@ dependencies = [
 
 [[package]]
 name = "gbnf"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f32665df1e35d6cc4f1f159b93fafaaa3efa68b205ac0d135474fe6e73ff5cf"
+checksum = "cdf6228362f4014ccbdb75788bb664ab1d2bb4c97fe0b8af13c7e7ea00bc5da4"
 dependencies = [
  "nom",
  "pretty_assertions",
