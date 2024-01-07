@@ -8,9 +8,15 @@
       rel="stylesheet"
     />
     <style>
+      html {
+      }
+
       body {
         font-family: "DM Sans", sans-serif;
         font-weight: 200;
+        padding: auto;
+        margin: auto;
+        max-width: 800px;
       }
 
       h1,
@@ -20,19 +26,19 @@
       }
 
       h1 {
-        font-size: 5rem;
+        font-size: 4rem;
       }
 
       h2 {
-        font-size: 3rem;
-      }
-
-      h3 {
         font-size: 2rem;
       }
 
+      h3 {
+        font-size: 1.2rem;
+      }
+
       p {
-        font-size: 1.5rem;
+        font-size: 1rem;
       }
 
       b {
@@ -64,35 +70,37 @@
   </head>
   <body>
     <h1 class="center">Epistemology</h1>
-    <h2 class="center">An open source platform for your local AI</h2>
+    <h2 class="center">An open source platform for your local text AI</h2>
     <div class="horizontal-card-holder">
       <div class="card">
         <h3>Local HTTP GET/POST API</h3>
         <p>
-          Epistemology provides a local HTTP API for your AI to use. This means
-          you can use any language you want to build your AI.
+          Local HTTP API for your AI to use so you can build on APIs using the
+          tools you want, using a backend you completely understand. The API was
+          built to be clear and simple so you can see every moving piece
         </p>
       </div>
       <div class="card">
         <h3>Bring your own static UI</h3>
         <p>
-          Epistemology provides a local HTTP API for your AI to use. This means
-          you can use any language you want to build your AI.
+          Epistemology comes with a default UI for text completion, but makes it
+          easy to replace with your own personal web frontend.
         </p>
       </div>
       <div class="card">
         <h3>JSON schema support</h3>
         <p>
-          Epistemology provides a local HTTP API for your AI to use. This means
-          you can use any language you want to build your AI.
+          Constraining AI outputs using grammars is very powerful, Epistemology
+          directly supports using JSON schema files as grammars so you can get
+          useful structured output for programmatic interfaces.
         </p>
       </div>
     </div>
     <p>Be in control of your usage of AI.</p>
     <p>
-      Powered by Rust.
-      <b>MIT</b> licensed.
-      <a href="https://github.com/richardanaya/epistemology/">Github</a>.
+      Powered by Rust.<br />
+      <b>MIT</b> licensed.<br />
+      <a href="https://github.com/richardanaya/epistemology/">Github</a>.<br />
     </p>
   </body>
 </html>
