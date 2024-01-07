@@ -9,9 +9,17 @@
     />
     <style>
       html {
+        overflow: hidden;
+        height: 100%;
       }
 
-      body {
+      ::-webkit-scrollbar {
+        display: none;
+      }
+
+      body {  
+        height: 100%;
+        overflow: auto;
         font-family: "DM Sans", sans-serif;
         font-weight: 200;
         padding: auto;
