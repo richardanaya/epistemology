@@ -11,6 +11,10 @@ Privacy goals:
 
 The goal of this project is to make a completely clear and visible way to run a server locally. The code for how this runs is as minimal as possible so you can understand exactly what you are running.
 
+You can install by grabbing binaries for all operating systems from [Releases](https://github.com/richardanaya/epistemology/releases)
+
+or if you have [rust](https://rustup.rs/) installed:
+
 ```
 cargo install epistemology
 ```
