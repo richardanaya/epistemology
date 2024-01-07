@@ -27,14 +27,19 @@
 
       h1 {
         font-size: 4rem;
+        line-height: 4rem;
+        margin: 0;
       }
 
       h2 {
         font-size: 2rem;
+        line-height: 2rem;
+        margin: 0;
       }
 
       h3 {
         font-size: 1.2rem;
+        margin: 0;
       }
 
       p {
@@ -66,11 +71,61 @@
         padding: 10px;
         margin: 10px;
       }
+
+      .splash {
+        background: black;
+        color: white;
+        margin: 0;
+      }
+      .splash .title {
+        padding: 2rem;
+      }
+      .splash img {
+        width: 100%;
+        max-width: 800px;
+      }
     </style>
   </head>
   <body>
-    <h1 class="center">Epistemology</h1>
-    <h2 class="center">An open source platform for your local text AI</h2>
+    <div class="splash">
+        <div class="title">
+            <h1>Epistemology</h1>
+            <h2>
+            A private open source platform for your local text AI
+        </div>
+        </h2>
+        <img src="./epistemology.png"/>
+    </div>
+    <p>
+      Language learning models are powerful tools you should feel in control of.
+      This project was created to be a middle ground between bare bones CLI
+      usage of llama.cpp and AI interfaces that are so complex or black boxes
+      they feel untrustworthy. It offers a number of ways it aims to be private that may appeal to you:
+
+      <ul>
+        <li>
+            Never writes your prompts out anywhere in logs or consoles
+        </li>
+        <li>
+            Runs only on http://localhost:8080 to never have network access outside your machine
+        </li>
+        <li>
+            Has extremely simple code so that you can understand and analyze every aspect
+        </li>
+        <li>
+            Has no stateful configuration or data other than what you initalize it with
+        </li>
+        <li>
+            It wraps `llama.cpp` and executes it with the most minimal exposing settings possible
+        </li>
+        <li>
+            Constrain output to only what to you want it to output with AI grammers
+        </li>
+        <li>
+            Zero intentions of ever commercializing or collecting data or directing downloads to third party services
+        </li>
+      </ul>
+    </p>
     <div class="horizontal-card-holder">
       <div class="card">
         <h3>Local HTTP GET/POST API</h3>
