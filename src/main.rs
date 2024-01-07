@@ -72,6 +72,10 @@ async fn handle_post(data: web::Data<EpistemologyCliArgs>, body: String) -> impl
     run_streaming_llm(&data, body)
 }
 
+async fn index() -> impl Responder {
+    HttpResponse::Ok().body(include_str!("./index.html"))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let cli: EpistemologyCliArgs = EpistemologyCliArgs::parse();
@@ -91,6 +95,8 @@ async fn main() -> std::io::Result<()> {
                 Err(err) => return Err(std::io::Error::new(std::io::ErrorKind::Other, err)),
             }
         );
+    } else {
+        println!("Serving UI on http://localhost:{}/ from built-in UI", port);
     }
     println!(
         r#"Listening with GET and POST on http://localhost:{}/api/text-completion
@@ -124,6 +130,8 @@ Examples:
                 )
                 .index_file("index.html"),
             );
+        } else {
+            a = a.route("/", web::get().to(index));
         }
 
         a
