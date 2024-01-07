@@ -3,6 +3,7 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use clap::Parser;
 use core::panic;
 use futures::StreamExt;
+use gbnf::Grammar;
 use serde::Deserialize;
 use std::fs;
 use std::io::{BufRead, BufReader};
@@ -31,6 +32,13 @@ struct EpistemologyCliArgs {
         help = "Path to grammar file (optional)"
     )]
     grammar: Option<PathBuf>,
+
+    #[arg(
+        short,
+        value_name = "JSON_SCHEMA_PATH",
+        help = "Path to JSON schema file to constrain output (optional)"
+    )]
+    json_schema: Option<PathBuf>,
 
     #[arg(short, value_name = "UI_PATH", help = "Path to UI static files folder")]
     ui: Option<PathBuf>,
@@ -150,7 +158,13 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
     };
 
     let n_str = args.num_tokens_output.unwrap_or(128).to_string();
-    let mut vec_cmd = vec!["-m", &full_model_path, "-n", &n_str, "--log-disable"];
+    let mut vec_cmd: Vec<String> = vec![
+        "-m".to_string(),
+        full_model_path.to_string(),
+        "-n".to_string(),
+        n_str,
+        "--log-disable".to_string(),
+    ];
 
     let full_grammar_path;
     if let Some(grammar) = &args.grammar {
@@ -158,15 +172,30 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
             Ok(full_path) => full_path.display().to_string(),
             Err(err) => panic!("Failed to execute AI: {}", err),
         };
-        vec_cmd.push("--grammar-file");
-        vec_cmd.push(&full_grammar_path);
+        vec_cmd.push("--grammar-file".to_string());
+        vec_cmd.push(full_grammar_path);
+    }
+
+    if let Some(json_schema) = &args.json_schema {
+        let full_json_schema_path = match fs::canonicalize(json_schema) {
+            Ok(full_path) => full_path.display().to_string(),
+            Err(err) => panic!("Failed to execute AI: {}", err),
+        };
+        let json_schema_str = fs::read_to_string(&full_json_schema_path).unwrap();
+        let g = Grammar::from_json_schema(&json_schema_str);
+        if let Err(err) = g {
+            panic!("Failed to execute AI: {}", err);
+        }
+        let g_str = g.unwrap().to_string();
+        vec_cmd.push("--grammar".to_string());
+        vec_cmd.push(g_str.to_string());
     }
 
     println!("Running LLM: {} ...", &vec_cmd.join(" "));
 
     // don't show prompt in commandline
-    vec_cmd.push("-p");
-    vec_cmd.push(prompt.as_str());
+    vec_cmd.push("-p".to_string());
+    vec_cmd.push(prompt);
 
     let mut child = Command::new(&args.exe_path)
         .args(&vec_cmd)
