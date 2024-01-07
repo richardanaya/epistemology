@@ -99,9 +99,9 @@
         <div class="title">
             <h1>Epistemology</h1>
             <h2>
-            A private open source platform for your local text AI
+                A private open source platform for your local text AI
+            </h2>
         </div>
-        </h2>
         <img src="./epistemology.png"/>
     </div>
     <p>
@@ -132,15 +132,16 @@
         <li>
             Zero intentions of ever commercializing or collecting data or directing downloads to third party services
         </li>
+        <li>
+            Open source so you can modify to your values and needs
+        </li>
       </ul>
     </p>
     <div class="horizontal-card-holder">
       <div class="card">
         <h3>Local HTTP GET/POST API</h3>
         <p>
-          Local HTTP API for your AI to use so you can build on APIs using the
-          tools you want, using a backend you completely understand. The API was
-          built to be clear and simple so you can see every moving piece
+          Unlock seamless integration with a local HTTP API designed for your needs. Build your AI tools upon APIs using your preferred technology, backed by a fully transparent and understandable backend. The API's clarity and simplicity ensure complete visibility into every aspect of its operation.
         </p>
       </div>
       <div class="card">
@@ -154,13 +155,54 @@
         <h3>JSON schema support</h3>
         <p>
           Constraining AI outputs using grammars is very powerful, Epistemology
-          directly supports using JSON schema files as grammars so you can get
+          natively supports using JSON schema files as grammars so you can get
           useful structured output for programmatic interfaces.
         </p>
       </div>
     </div>
-    <p>Be in control of your usage of AI.</p>
+
+    <h3>Getting Started</h3>
+
     <p>
+        Install <a href="https://github.com/ggerganov/llama.cpp">llama.cpp</a>
+    </p>
+    <p>
+        Download a GGUF model such as <a href="https://huggingface.co/TheBloke/phi-2-GGUF">
+            TheBloke/phi-2-GGUF</a>
+    </p>
+
+    <p>
+        Install <a href="https://github.com/richardanaya/epistemology/releases/latest/">binaries</a> (macOS, Linux, Windows)
+        </p>
+        <p>
+        or
+        </p>
+<p>
+        Build from <source>
+
+    <pre>
+        cargo install epistemology
+    </pre>
+    </p>
+
+    <p>Run the server
+
+      <pre>
+        epistemology -p ~/llama.cpp/main -e ~/Downloads/phi-2.Q2_K.gguf
+
+        Listening with GET and POST on http://localhost:8080/api/text-completion
+        Examples:
+            * http://localhost:8080/api/text-completion?prompt=famous%20qoute:
+            * curl -X POST -d "famous quote:" http://localhost:8080/api/text-completion
+    </pre>
+    </p>
+
+    <div class="splash">
+      <img src="./screenshot.png"/>
+  </div>
+
+    <p>
+      Be in control of your AI.<br/>
       Powered by Rust.<br />
       <b>MIT</b> licensed.<br />
       <a href="https://github.com/richardanaya/epistemology/">Github</a>.<br />
