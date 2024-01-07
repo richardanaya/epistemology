@@ -2,7 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    - main
 
 jobs:
   create-release:
@@ -11,8 +10,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: taiki-e/create-gh-release-action@v1
         #with:
-          # (optional)
-          #changelog: CHANGELOG.md
+        # (optional)
+        #changelog: CHANGELOG.md
         env:
           # (required)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -29,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: epistemology 
+          bin: epistemology
           # (optional) On which platform to distribute the `.zip` file.
           # [default value: windows]
           # [possible values: all, unix, windows, none]
