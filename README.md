@@ -128,7 +128,7 @@ Output
 
 ```json
 { 
-  "quote" : “The sky above the port was the color of television, tuned to a dead channel.”,
+  "quote" : "The sky above the port was the color of television, tuned to a dead channel.",
   "firstName" : "William",
   "lastNameName" : "William",
   "age": 75.0
