@@ -41,7 +41,7 @@
     <script>
       const textarea = document.querySelector("textarea");
       const completeButton = document.querySelector("#complete");
-      const embeddingButton = document.querySelector("#embed");
+      const embeddingButton = document.querySelector("#embedding");
       completeButton.addEventListener("click", () => {
         completeButton.disabled = true;
         fetch("/api/completion", {

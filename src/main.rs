@@ -86,7 +86,7 @@ async fn handle_embedding_post(
     data: web::Data<EpistemologyCliArgs>,
     body: String,
 ) -> impl Responder {
-    run_streaming_llm(Mode::Completion, &data, body)
+    run_streaming_llm(Mode::Embedding, &data, body)
 }
 
 async fn index() -> impl Responder {
