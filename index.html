@@ -160,11 +160,11 @@
     <h3>Getting Started</h3>
 
     <p>
-        Install <a href="https://github.com/ggerganov/llama.cpp">llama.cpp</a>. If you are using Windows, choose the appropriate zip depending on if using Nvidia Cuda or AMD OpenCL CUBlas. If you are using mac, check out how to build [here](https://agi-sphere.com/install-llama-mac/). If you are using other unix systems, you can build from source according to Llama.cpp's [website](https://github.com/ggerganov/llama.cpp).
+        Install <a href="https://github.com/ggerganov/llama.cpp">llama.cpp</a>. If you are using Windows, choose the appropriate zip depending on if using Nvidia Cuda or AMD OpenCL CUBlas. If you are using mac, check out how to build <a href="https://agi-sphere.com/install-llama-mac/">here</a>. If you are using other unix systems, you can build from source according to Llama.cpp's <a href="https://github.com/ggerganov/llama.cpp">website</a>.
     </p>
     <p>
         Download a GGUF model such as <a href="https://huggingface.co/TheBloke/phi-2-GGUF">
-            TheBloke/phi-2-GGUF</a>
+            TheBloke/phi-2-GGUF</a>. Any llama.cpp compatible GGUF you know can run on your machine will do.
     </p>
 
     <p>
@@ -184,12 +184,13 @@
     <p>Run the server
 
       <pre>
-        epistemology -p ~/llama.cpp/main -e ~/Downloads/phi-2.Q2_K.gguf
+        epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding
 
         Listening with GET and POST on http://localhost:8080/api/completion
         Examples:
             * http://localhost:8080/api/completion?prompt=famous%20qoute:
             * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
+            * curl -X POST -d "robots are good" http://localhost:8080/api/embedding
     </pre>
     </p>
 

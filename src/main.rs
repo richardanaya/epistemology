@@ -119,7 +119,8 @@ async fn main() -> std::io::Result<()> {
         r#"Listening with GET and POST on http://localhost:{}/api/completion
 Examples:
     * http://localhost:{}/api/completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous qoute:" http://localhost:{}/api/completion"#,
+    * curl -X POST -d "famous qoute:" http://localhost:{}/api/completion
+    * curl -X POST -d "robots are good" http://localhost:8080/api/embedding"#,
         port, port, port
     );
 

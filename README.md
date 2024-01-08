@@ -24,35 +24,38 @@ cargo install epistemology
 
 example:
 ```bash
-epistemology -p ~/llama/main -e ./magic.gguf
+epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding
 
 Listening with GET and POST on http://localhost:8080/api/completion
 Examples:
     * http://localhost:8080/api/completion?prompt=famous%20qoute:
     * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
+    * curl -X POST -d "robots are good" http://localhost:8080/api/embedding
 ```
 
 You can also run your own web interface from a static path
 
 ```bash
-epistemology -p ~/llama/main -e ./magic.gguf -u ./my-web-interface
+epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding -u ./my-web-interface
 
 Serving UI on http://localhost:8080/ from ./my-web-interface
 Listening with GET and POST on http://localhost:8080/api/completion
 Examples:
     * http://localhost:8080/api/completion?prompt=famous%20qoute:
     * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
+    * curl -X POST -d "robots are good" http://localhost:8080/api/embedding
 ```
 
 You can also constrain the output grammar with *.gbnf files for things like JSON output
 
 ```bash
-epistemology -p ~/llama/main -e ./magic.gguf -g ./json.gbnf
+epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding -g ./json.gbnf
 
 Listening with GET and POST on http://localhost:8080/completion
 Examples:
     * http://localhost:8080/api/completion?prompt=famous%20qoute:
     * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
+    * curl -X POST -d "robots are good" http://localhost:8080/api/embedding
 ```
 
 # Constraining to JSON Schema
@@ -90,7 +93,7 @@ Let's assume you have a file called "schema.json" that has JSON schema inside it
 ```
 
 ```bash
-epistemology -p ~/llama/main -e ./magic.gguf -j ./schema.json
+epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding -j ./my-schema.json
 ```
 
 We can now ask the AI questions and now get answers constrained to our JSON format. Since a lot of metadata is lost during conversion to an AI grammar, we should re-iterate in the system prompt what we want to guide the generation better.
