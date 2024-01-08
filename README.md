@@ -26,10 +26,10 @@ example:
 ```bash
 epistemology -p ~/llama/main -e ./magic.gguf
 
-Listening with GET and POST on http://localhost:8080/api/text-completion
+Listening with GET and POST on http://localhost:8080/api/completion
 Examples:
-    * http://localhost:8080/api/text-completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous quote:" http://localhost:8080/api/text-completion
+    * http://localhost:8080/api/completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
 ```
 
 You can also run your own web interface from a static path
@@ -38,10 +38,10 @@ You can also run your own web interface from a static path
 epistemology -p ~/llama/main -e ./magic.gguf -u ./my-web-interface
 
 Serving UI on http://localhost:8080/ from ./my-web-interface
-Listening with GET and POST on http://localhost:8080/api/text-completion
+Listening with GET and POST on http://localhost:8080/api/completion
 Examples:
-    * http://localhost:8080/api/text-completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous quote:" http://localhost:8080/api/text-completion
+    * http://localhost:8080/api/completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
 ```
 
 You can also constrain the output grammar with *.gbnf files for things like JSON output
@@ -49,10 +49,10 @@ You can also constrain the output grammar with *.gbnf files for things like JSON
 ```bash
 epistemology -p ~/llama/main -e ./magic.gguf -g ./json.gbnf
 
-Listening with GET and POST on http://localhost:8080/text-completion
+Listening with GET and POST on http://localhost:8080/completion
 Examples:
-    * http://localhost:8080/api/text-completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous quote:" http://localhost:8080/api/text-completion
+    * http://localhost:8080/api/completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
 ```
 
 # Constraining to JSON Schema
@@ -96,7 +96,7 @@ epistemology -p ~/llama/main -e ./magic.gguf -j ./schema.json
 We can now ask the AI questions and now get answers constrained to our JSON format. Since a lot of metadata is lost during conversion to an AI grammar, we should re-iterate in the system prompt what we want to guide the generation better.
 
 ```text
-HTTP POST http://localhost:8080/api/text-completion
+HTTP POST http://localhost:8080/api/completion
 
 [system]
 I am Argyle, an intellegent assistant, I structure my responses according to JSON schema

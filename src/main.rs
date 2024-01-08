@@ -27,6 +27,13 @@ struct EpistemologyCliArgs {
     exe_path: PathBuf,
 
     #[arg(
+        short = 'd',
+        value_name = "LLAMMA_CPP_EMBEDDING_EXE_PATH",
+        help = "Path to LLAMMA CPP embedding executable"
+    )]
+    embedding_path: Option<PathBuf>,
+
+    #[arg(
         short,
         value_name = "GRAMMAR_PATH",
         help = "Path to grammar file (optional)"
@@ -61,15 +68,25 @@ struct TextCompletationRequestQuery {
     prompt: String,
 }
 
-async fn handle_get(
+async fn handle_completion_get(
     data: web::Data<EpistemologyCliArgs>,
     query: web::Query<TextCompletationRequestQuery>,
 ) -> impl Responder {
-    run_streaming_llm(&data, query.prompt.clone())
+    run_streaming_llm(Mode::Completion, &data, query.prompt.clone())
 }
 
-async fn handle_post(data: web::Data<EpistemologyCliArgs>, body: String) -> impl Responder {
-    run_streaming_llm(&data, body)
+async fn handle_completion_post(
+    data: web::Data<EpistemologyCliArgs>,
+    body: String,
+) -> impl Responder {
+    run_streaming_llm(Mode::Completion, &data, body)
+}
+
+async fn handle_embedding_post(
+    data: web::Data<EpistemologyCliArgs>,
+    body: String,
+) -> impl Responder {
+    run_streaming_llm(Mode::Completion, &data, body)
 }
 
 async fn index() -> impl Responder {
@@ -99,10 +116,10 @@ async fn main() -> std::io::Result<()> {
         println!("Serving UI on http://localhost:{}/ from built-in UI", port);
     }
     println!(
-        r#"Listening with GET and POST on http://localhost:{}/api/text-completion
+        r#"Listening with GET and POST on http://localhost:{}/api/completion
 Examples:
-    * http://localhost:{}/api/text-completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous qoute:" http://localhost:{}/api/text-completion"#,
+    * http://localhost:{}/api/completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous qoute:" http://localhost:{}/api/completion"#,
         port, port, port
     );
 
@@ -110,11 +127,15 @@ Examples:
         let cors = Cors::default()
             .allowed_origin_fn(|_, _req_head| true)
             .allowed_methods(vec!["GET", "POST"]);
-        let mut a = App::new().app_data(app_data.clone()).wrap(cors).service(
-            web::resource("/api/text-completion")
-                .route(web::get().to(handle_get))
-                .route(web::post().to(handle_post)),
-        );
+        let mut a = App::new()
+            .app_data(app_data.clone())
+            .wrap(cors)
+            .service(
+                web::resource("/api/completion")
+                    .route(web::get().to(handle_completion_get))
+                    .route(web::post().to(handle_completion_post)),
+            )
+            .service(web::resource("/api/embedding").route(web::post().to(handle_embedding_post)));
 
         // let's serve the UI if the user provided a path to a static folder of files
         if let Some(ui_path) = &cli.ui {
@@ -141,13 +162,26 @@ Examples:
     .await
 }
 
-fn run_streaming_llm(args: &EpistemologyCliArgs, prompt: String) -> impl Responder {
+enum Mode {
+    Completion,
+    Embedding,
+}
+
+fn run_streaming_llm(mode: Mode, args: &EpistemologyCliArgs, prompt: String) -> impl Responder {
+    if let Mode::Embedding = mode {
+        if args.embedding_path.is_none() {
+            return HttpResponse::BadRequest()
+                .content_type("text/plain")
+                .body("Embedding mode requires embedding path, look at help for more information");
+        }
+    }
+
     let (tx, rx) = mpsc::unbounded_channel();
 
     let a = args.clone();
     // Spawn a thread to execute the command and send output to the channel
     thread::spawn(move || {
-        run_llama(&a, prompt, tx);
+        run_llama(mode, &a, prompt, tx);
     });
 
     // Convert the synchronous Flume receiver into an asynchronous stream
@@ -159,7 +193,12 @@ fn run_streaming_llm(args: &EpistemologyCliArgs, prompt: String) -> impl Respond
         .streaming(async_stream)
 }
 
-fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::UnboundedSender<String>) {
+fn run_llama(
+    mode: Mode,
+    args: &EpistemologyCliArgs,
+    prompt: String,
+    sender: mpsc::UnboundedSender<String>,
+) {
     let full_model_path = match fs::canonicalize(&args.model) {
         Ok(full_path) => full_path.display().to_string(),
         Err(err) => panic!("Failed to execute AI: {}", err),
@@ -205,11 +244,14 @@ fn run_llama(args: &EpistemologyCliArgs, prompt: String, sender: mpsc::Unbounded
     vec_cmd.push("-p".to_string());
     vec_cmd.push(prompt);
 
-    let mut child = Command::new(&args.exe_path)
-        .args(&vec_cmd)
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("failed to execute child");
+    let mut child = Command::new(match mode {
+        Mode::Completion => args.exe_path.clone(),
+        Mode::Embedding => args.embedding_path.clone().unwrap(),
+    })
+    .args(&vec_cmd)
+    .stdout(Stdio::piped())
+    .spawn()
+    .expect("failed to execute child");
 
     let stdout = BufReader::new(child.stdout.take().unwrap());
 

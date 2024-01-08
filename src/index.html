@@ -35,24 +35,42 @@
   </head>
   <body>
     <div><textarea> </textarea></div>
-    <button type="submit">Send</button>
+    <button id="complete" type="submit">Complete</button>
+    <button id="embedding" type="submit">Embedding</button>
     <div id="error"></div>
     <script>
       const textarea = document.querySelector("textarea");
-      const submit = document.querySelector("button");
-      submit.addEventListener("click", () => {
-        submit.disabled = true;
-        fetch("/api/text-completion", {
+      const completeButton = document.querySelector("#complete");
+      const embeddingButton = document.querySelector("#embed");
+      completeButton.addEventListener("click", () => {
+        completeButton.disabled = true;
+        fetch("/api/completion", {
           method: "POST",
           body: textarea.value,
         })
           .then((response) => response.text())
           .then((data) => {
-            submit.disabled = false;
+            completeButton.disabled = false;
             textarea.value = data;
           })
           .catch((error) => {
-            submit.disabled = false;
+            completeButton.disabled = false;
+            document.querySelector("#error").innerText = error;
+          });
+      });
+      embeddingButton.addEventListener("click", () => {
+        embeddingButton.disabled = true;
+        fetch("/api/embedding", {
+          method: "POST",
+          body: textarea.value,
+        })
+          .then((response) => response.text())
+          .then((data) => {
+            embeddingButton.disabled = false;
+            textarea.value = data;
+          })
+          .catch((error) => {
+            embeddingButton.disabled = false;
             document.querySelector("#error").innerText = error;
           });
       });
