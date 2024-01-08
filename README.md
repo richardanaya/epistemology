@@ -26,6 +26,7 @@ example:
 ```bash
 epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding
 
+Serving UI on http://localhost:8080/ from built-in UI
 Listening with GET and POST on http://localhost:8080/api/completion
 Examples:
     * http://localhost:8080/api/completion?prompt=famous%20qoute:
@@ -51,6 +52,7 @@ You can also constrain the output grammar with *.gbnf files for things like JSON
 ```bash
 epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding -g ./json.gbnf
 
+Serving UI on http://localhost:8080/ from built-in UI
 Listening with GET and POST on http://localhost:8080/completion
 Examples:
     * http://localhost:8080/api/completion?prompt=famous%20qoute:
