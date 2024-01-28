@@ -1,6 +1,6 @@
 [package]
 name = "epistemology"
-version = "0.3.7"
+version = "0.3.8"
 edition = "2021"
 description = "A simple and clear way of hosting llama.cpp as a private HTTP API"
 license = "MIT"
@@ -11,12 +11,13 @@ license = "MIT"
 actix-cors = "0.6.5"
 actix-files = "0.6.2"
 actix-tls = { version = "3.0.0-rc.2" }
-actix-web = {version="4.4.1", features=["openssl"]}
+actix-web = {version="4.4.1", features=["rustls"]}
 clap = { version = "4.4.12", features = ["derive"] }
 futures = "0.3.30"
 gbnf = "0.1.1"
-openssl = "0.10.63"
 rcgen = "0.12.1"
+rustls = "0.20"
+rustls-pemfile = "2.0.0"
 serde = { version = "1.0", features = ["derive"] }
 tokio = "1.35.1"
 tokio-stream = "0.1.14"

@@ -1,3 +1,7 @@
+# v0.3.8
+
+* use rustls
+
 # v0.3.7
 
 * HTTPS with auto cert generation by default

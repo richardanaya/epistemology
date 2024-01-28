@@ -4,11 +4,11 @@ use clap::Parser;
 use core::panic;
 use futures::StreamExt;
 use gbnf::Grammar;
-use openssl::pkey::PKey;
-use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use openssl::x509::X509;
+use rustls::{Certificate, PrivateKey, ServerConfig};
+use rustls_pemfile::{certs, pkcs8_private_keys};
 use serde::Deserialize;
 use std::fs;
+use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::PathBuf;
@@ -241,25 +241,52 @@ Examples:
     });
 
     if let (Some(key_file), Some(cert_file)) = (&cli.https_key_file, &cli.https_cert_file) {
-        let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-        builder
-            .set_private_key_file(key_file, SslFiletype::PEM)
-            .unwrap();
+        let config = ServerConfig::builder()
+            .with_safe_defaults()
+            .with_no_client_auth();
 
-        builder.set_certificate_chain_file(cert_file).unwrap();
-        s.bind_openssl(format!("{}:{}", origin, port), builder)?
+        // load TLS key/cert files
+        let cert_file = &mut BufReader::new(File::open(cert_file).unwrap());
+        let key_file = &mut BufReader::new(File::open(key_file).unwrap());
+
+        // convert files to key/cert objects
+        let cert_chain = certs(cert_file)
+            .map(|d| {
+                let der = d.unwrap();
+                Certificate(der.to_vec())
+            })
+            .collect();
+        let mut keys: Vec<PrivateKey> = pkcs8_private_keys(key_file)
+            .map(|d| {
+                let der = d.unwrap();
+                PrivateKey(der.secret_pkcs8_der().to_vec())
+            })
+            .collect();
+
+        // exit if no keys could be parsed
+        if keys.is_empty() {
+            eprintln!("Could not locate PKCS 8 private keys.");
+            std::process::exit(1);
+        }
+
+        let sc = config.with_single_cert(cert_chain, keys.remove(0)).unwrap();
+
+        s.bind_rustls(format!("{}:{}", origin, port), sc)?
             .run()
             .await
     } else {
         let cert = rcgen::generate_simple_self_signed(vec![origin.to_owned()]).unwrap();
-        let cert_file = cert.serialize_pem().unwrap();
-        let key_file = cert.serialize_private_key_pem();
-        let cert = X509::from_pem(cert_file.as_bytes()).unwrap();
-        let key = PKey::private_key_from_pem(key_file.as_bytes()).unwrap();
-        let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-        builder.set_certificate(&cert).unwrap();
-        builder.set_private_key(&key).unwrap();
-        s.bind_openssl(format!("{}:{}", origin, port), builder)?
+        let cert_file = cert.serialize_der().unwrap();
+        let key_file = cert.serialize_private_key_der();
+        let pk = PrivateKey(key_file);
+
+        let cert_chain = Certificate(cert_file);
+        let config = ServerConfig::builder()
+            .with_safe_defaults()
+            .with_no_client_auth();
+
+        let sc: rustls::ServerConfig = config.with_single_cert(vec![cert_chain], pk).unwrap();
+        s.bind_rustls(format!("{}:{}", origin, port), sc)?
             .run()
             .await
     }
