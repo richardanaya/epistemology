@@ -6,7 +6,8 @@ use futures::StreamExt;
 use gbnf::Grammar;
 use serde::Deserialize;
 use std::fs;
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
+use std::io::Read;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::thread;
@@ -59,11 +60,11 @@ struct EpistemologyCliArgs {
 
     // Output length with default 128
     #[arg(
-        short,
+        short = 't',
         value_name = "OUTPUT_LENGTH",
         help = "Output length of LLM generation"
     )]
-    num_tokens_output: Option<u32>,
+    tokens_max: Option<u32>,
 
     // Port to serve on
     #[arg(short, value_name = "PORT", help = "Port to serve on")]
@@ -212,7 +213,7 @@ fn run_llama(
         Err(err) => panic!("Failed to execute AI: {}", err),
     };
 
-    let n_str = args.num_tokens_output.unwrap_or(128).to_string();
+    let n_str = args.tokens_max.unwrap_or(128).to_string();
     let mut vec_cmd: Vec<String> = vec![
         "-m".to_string(),
         full_model_path.to_string(),
@@ -255,7 +256,7 @@ fn run_llama(
 
     // don't show prompt in commandline
     vec_cmd.push("-p".to_string());
-    vec_cmd.push(prompt);
+    vec_cmd.push(prompt.clone());
 
     let mut child = Command::new(match mode {
         Mode::Completion => args.exe_path.clone(),
@@ -266,17 +267,23 @@ fn run_llama(
     .spawn()
     .expect("failed to execute child");
 
-    let stdout = BufReader::new(child.stdout.take().unwrap());
+    let child_stdout = BufReader::new(child.stdout.take().unwrap());
+    const BUFFER_SIZE: usize = 1; // Set to 1 for reading one byte at a time
 
-    let lines: Vec<_> = stdout.lines().flatten().collect();
-    let total_lines = lines.len();
-    for (i, line) in lines.iter().enumerate() {
-        let is_last = i == total_lines - 1;
+    let mut reader = BufReader::with_capacity(BUFFER_SIZE, child_stdout);
+    let mut buffer = [0; BUFFER_SIZE]; // A byte array buffer
 
-        if is_last {
-            sender.send(line.clone()).unwrap();
-        } else {
-            sender.send(line.clone() + "\n").unwrap();
+    loop {
+        match reader.read(&mut buffer) {
+            Ok(0) => break, // EOF reached
+            Ok(_) => {
+                let character = buffer[0] as char; // Convert byte to char
+                sender.send(character.to_string()).unwrap(); // Send the character as a String
+            }
+            Err(e) => {
+                eprintln!("Error reading from child process: {}", e);
+                break;
+            }
         }
     }
 }

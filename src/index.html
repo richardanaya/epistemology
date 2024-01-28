@@ -42,9 +42,10 @@
       const textarea = document.querySelector("textarea");
       const completeButton = document.querySelector("#complete");
       const embeddingButton = document.querySelector("#embedding");
-      completeButton.addEventListener("click", () => {
+      completeButton.addEventListener("click", async () => {
         completeButton.disabled = true;
-        fetch("/api/completion", {
+
+        /*fetch("/api/completion", {
           method: "POST",
           body: textarea.value,
         })
@@ -53,10 +54,47 @@
             completeButton.disabled = false;
             textarea.value = data;
           })
-          .catch((error) => {
+          .catch((err
+          or) => {
             completeButton.disabled = false;
             document.querySelector("#error").innerText = error;
-          });
+          });*/
+
+        // make streaming http call and update textarea character by character, adding characters to the end of the textarea as they are received
+        // use xhr instead of fetch because fetch does not support streaming
+        const response = await fetch("/api/completion", {
+          method: "POST",
+          body: textarea.value,
+        });
+
+        if (!response.body) {
+          throw new Error("ReadableStream not supported in this browser.");
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        let firstChunk = true;
+        while (true) {
+          const { value, done } = await reader.read();
+
+          if (done) {
+            break;
+          }
+
+          const chunk = decoder.decode(value, { stream: true });
+
+          // Process each character in the chunk
+          for (let char of chunk) {
+            if (firstChunk) {
+              firstChunk = false;
+              textarea.value = "";
+            }
+            textarea.value += char;
+          }
+        }
+
+        completeButton.disabled = false;
       });
       embeddingButton.addEventListener("click", () => {
         embeddingButton.disabled = true;
