@@ -20,6 +20,7 @@ cargo install epistemology
 ```
 
 <img width="1056" alt="Screenshot 2024-01-07 at 12 04 16 AM" src="https://github.com/richardanaya/epistemology/assets/294042/e4020db2-562f-4773-be39-be9226a81674">
+<img width="807" alt="Screenshot 2024-01-28 at 9 24 47 AM" src="https://github.com/richardanaya/epistemology/assets/294042/069515da-9a9b-4252-b40a-52ed459850f2">
 
 
 example:
