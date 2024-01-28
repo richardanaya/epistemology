@@ -5,15 +5,24 @@
       body {
         background-color: #16161d;
         color: #333;
+
+        /* make a grid layout where the text area takes up most of the screen and two buttons at bottom */
+        display: grid;
+        grid-template-rows: 1fr auto auto;
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "text"
+          "complete"
+          "embedding";
       }
       textarea {
         width: 100%;
-        height: 10rem;
         background-color: #16161d;
         color: white;
         font-size: 1rem;
         border: 1px solid #ccc;
         border-radius: 0.5rem;
+        grid-area: text;
       }
       button {
         width: 100%;
@@ -34,7 +43,7 @@
     </style>
   </head>
   <body>
-    <div><textarea> </textarea></div>
+    <textarea> </textarea>
     <button id="complete" type="submit">Complete</button>
     <button id="embedding" type="submit">Embedding</button>
     <div id="error"></div>
@@ -44,24 +53,6 @@
       const embeddingButton = document.querySelector("#embedding");
       completeButton.addEventListener("click", async () => {
         completeButton.disabled = true;
-
-        /*fetch("/api/completion", {
-          method: "POST",
-          body: textarea.value,
-        })
-          .then((response) => response.text())
-          .then((data) => {
-            completeButton.disabled = false;
-            textarea.value = data;
-          })
-          .catch((err
-          or) => {
-            completeButton.disabled = false;
-            document.querySelector("#error").innerText = error;
-          });*/
-
-        // make streaming http call and update textarea character by character, adding characters to the end of the textarea as they are received
-        // use xhr instead of fetch because fetch does not support streaming
         const response = await fetch("/api/completion", {
           method: "POST",
           body: textarea.value,
@@ -91,6 +82,9 @@
               textarea.value = "";
             }
             textarea.value += char;
+
+            // scroll to bottom
+            textarea.scrollTop = textarea.scrollHeight;
           }
         }
 
