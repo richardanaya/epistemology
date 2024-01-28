@@ -66,6 +66,14 @@ struct EpistemologyCliArgs {
     )]
     tokens_max: Option<u32>,
 
+    // Optional origin instead of localhost
+    #[arg(
+        short = 'o',
+        value_name = "ORIGIN",
+        help = "Optional origin instead of localhost"
+    )]
+    origin: Option<String>,
+
     // Port to serve on
     #[arg(short, value_name = "PORT", help = "Port to serve on")]
     port: Option<u16>,
@@ -110,10 +118,13 @@ async fn main() -> std::io::Result<()> {
     // let's make these parameters available to the web server for all requests to use
     let app_data = web::Data::new(cli.clone());
 
+    let origin = cli.origin.unwrap_or("localhost".to_string());
+
     // let's print out some helpful information for the user
     if let Some(ui) = &cli.ui {
         println!(
-            "Serving UI on http://localhost:{}/ from {}",
+            "Serving UI on http://{}:{}/ from {}",
+            origin,
             port,
             match fs::canonicalize(ui) {
                 Ok(full_path) => full_path.display().to_string(),
@@ -121,15 +132,15 @@ async fn main() -> std::io::Result<()> {
             }
         );
     } else {
-        println!("Serving UI on http://localhost:{}/ from built-in UI", port);
+        println!("Serving UI on http://{}:{}/ from built-in UI", origin, port);
     }
     println!(
-        r#"Listening with GET and POST on http://localhost:{}/api/completion
+        r#"Listening with GET and POST on http://{}:{}/api/completion
 Examples:
-    * http://localhost:{}/api/completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous qoute:" http://localhost:{}/api/completion
-    * curl -X POST -d "robots are good" http://localhost:8080/api/embedding"#,
-        port, port, port
+    * http://{}:{}/api/completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous qoute:" http://{}:{}/api/completion
+    * curl -X POST -d "robots are good" http://{}:{}/api/embedding"#,
+        origin, port, origin, port, origin, port, origin, port
     );
 
     HttpServer::new(move || {
@@ -166,7 +177,7 @@ Examples:
 
         a
     })
-    .bind(format!("localhost:{}", port))?
+    .bind(format!("{}:{}", origin, port))?
     .run()
     .await
 }
