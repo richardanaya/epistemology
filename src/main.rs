@@ -128,6 +128,24 @@ async fn index() -> impl Responder {
     HttpResponse::Ok().body(include_str!("./index.html"))
 }
 
+async fn css() -> impl Responder {
+    HttpResponse::Ok().body(include_str!("./index.css"))
+}
+
+async fn inter() -> impl Responder {
+    let font_bytes = include_bytes!("./Inter-Thin.ttf");
+    HttpResponse::Ok()
+        .content_type("font/ttf")
+        .body(font_bytes.to_vec())
+}
+
+async fn icon() -> impl Responder {
+    let icon_bytes = include_bytes!("./icon.png");
+    HttpResponse::Ok()
+        .content_type("image/png")
+        .body(icon_bytes.to_vec())
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let cli: EpistemologyCliArgs = EpistemologyCliArgs::parse();
@@ -214,6 +232,9 @@ Examples:
             );
         } else {
             a = a.route("/", web::get().to(index));
+            a = a.route("/index.css", web::get().to(css));
+            a = a.route("/Inter-Light.ttf", web::get().to(inter));
+            a = a.route("/icon.png", web::get().to(icon));
         }
 
         a

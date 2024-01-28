@@ -1,11 +1,27 @@
 <html>
   <head>
     <title>Epistemology</title>
+    <link rel="stylesheet" href="/index.css" />
+    <link rel="icon" type="image/png" href="/icon.png" />
     <style>
-      body {
-        background-color: #16161d;
-        color: #333;
+      /* include font Inter-Light.ttf */
+      @font-face {
+        font-family: "Inter";
+        src: url("/Inter-Light.ttf");
+      }
 
+      * {
+        font-family: Inter;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus,
+      button:focus {
+        outline: none;
+      }
+
+      body {
         /* make a grid layout where the text area takes up most of the screen and two buttons at bottom */
         display: grid;
         grid-template-rows: 1fr auto auto;
@@ -17,42 +33,53 @@
       }
       textarea {
         width: 100%;
-        background-color: #16161d;
-        color: white;
-        font-size: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 0.5rem;
+        border-radius: var(--radius-2);
+        padding: var(--size-fluid-3);
+        box-shadow: var(--shadow-2);
         grid-area: text;
+        padding: 1rem;
+        font-size: 1.2rem;
+        font-weight: 400;
       }
       button {
+        border: none;
+        margin: 0;
+        padding: 0;
         width: 100%;
-        background-color: #16161d;
-        border: 1px solid #ccc;
-        border-radius: 0.5rem;
-        color: #ccc;
-        font-size: 1rem;
+        border-radius: var(--radius-2);
+        padding: var(--size-fluid-3);
+        box-shadow: var(--shadow-2);
         margin-top: 1rem;
-      }
-      button:disabled {
-        background-color: #333;
-        color: #666;
-      }
-      #error {
-        color: #999;
       }
     </style>
   </head>
   <body>
-    <textarea> </textarea>
-    <button id="complete" type="submit">Complete</button>
+    <textarea
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    ></textarea>
+    <button id="complete" type="submit">Complete (CTRL + Enter)</button>
     <button id="embedding" type="submit">Embedding</button>
     <div id="error"></div>
     <script>
       const textarea = document.querySelector("textarea");
       const completeButton = document.querySelector("#complete");
       const embeddingButton = document.querySelector("#embedding");
+
+      textarea.focus();
+
+      // ctrl + enter to complete
+      textarea.addEventListener("keydown", (event) => {
+        if (event.ctrlKey && event.key === "Enter") {
+          completeButton.click();
+        }
+      });
+
       completeButton.addEventListener("click", async () => {
         completeButton.disabled = true;
+        textarea.disabled = true;
         const response = await fetch("/api/completion", {
           method: "POST",
           body: textarea.value,
@@ -87,7 +114,7 @@
             textarea.scrollTop = textarea.scrollHeight;
           }
         }
-
+        textarea.disabled = false;
         completeButton.disabled = false;
       });
       embeddingButton.addEventListener("click", () => {
