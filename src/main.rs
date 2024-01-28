@@ -34,6 +34,13 @@ struct EpistemologyCliArgs {
     embedding_path: Option<PathBuf>,
 
     #[arg(
+        short = 'n',
+        value_name = "NUM_GPU_LAYERS",
+        help = "Number of layers to delegate to GPU"
+    )]
+    num_layers: Option<u32>,
+
+    #[arg(
         short,
         value_name = "GRAMMAR_PATH",
         help = "Path to grammar file (optional)"
@@ -237,6 +244,11 @@ fn run_llama(
         let g_str = g.unwrap().to_string();
         vec_cmd.push("--grammar".to_string());
         vec_cmd.push(g_str.to_string());
+    }
+
+    if let Some(num_layers) = &args.num_layers {
+        vec_cmd.push("-ngl".to_string());
+        vec_cmd.push(num_layers.to_string());
     }
 
     println!("Running LLM: {} ...", &vec_cmd.join(" "));
