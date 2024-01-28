@@ -5,7 +5,8 @@ use core::panic;
 use futures::StreamExt;
 use gbnf::Grammar;
 use rustls::{Certificate, PrivateKey, ServerConfig};
-use rustls_pemfile::{certs, pkcs8_private_keys};
+use rustls_pemfile::certs;
+use rustls_pemfile::rsa_private_keys;
 use serde::Deserialize;
 use std::fs;
 use std::fs::File;
@@ -250,22 +251,23 @@ Examples:
         let key_file = &mut BufReader::new(File::open(key_file).unwrap());
 
         // convert files to key/cert objects
-        let cert_chain = certs(cert_file)
+        let cert_chain: Vec<Certificate> = certs(cert_file)
             .map(|d| {
                 let der = d.unwrap();
                 Certificate(der.to_vec())
             })
             .collect();
-        let mut keys: Vec<PrivateKey> = pkcs8_private_keys(key_file)
+        let mut keys: Vec<PrivateKey> = rsa_private_keys(key_file)
             .map(|d| {
                 let der = d.unwrap();
-                PrivateKey(der.secret_pkcs8_der().to_vec())
+                // convert to PKCS 8 key
+                PrivateKey(der.secret_pkcs1_der().to_vec())
             })
             .collect();
 
         // exit if no keys could be parsed
         if keys.is_empty() {
-            eprintln!("Could not locate PKCS 8 private keys.");
+            eprintln!("Could not load private keys, should be RSA? Did you use mkcert?");
             std::process::exit(1);
         }
 
