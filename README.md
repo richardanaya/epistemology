@@ -146,3 +146,11 @@ Output
   "age": 75.0
 }
 ```
+
+## Advanced: Running Epistemology on AMD Radeon on Windows with a specific layer count
+
+```
+$env:GGML_OPENCL_PLATFORM = "AMD"
+$env:GGML_OPENCL_DEVICE = "1" # you can change devices here
+epistemology -m phi2.gguf -e ../llama.cpp/main.exe -n 40
+```
