@@ -26,12 +26,12 @@ example:
 ```bash
 epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding
 
-Serving UI on http://localhost:8080/ from built-in UI
-Listening with GET and POST on http://localhost:8080/api/completion
+Serving UI on https://localhost:8080/ from built-in UI
+Listening with GET and POST on https://localhost:8080/api/completion
 Examples:
-    * http://localhost:8080/api/completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
-    * curl -X POST -d "robots are good" http://localhost:8080/api/embedding
+    * https://localhost:8080/api/completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous quote:" https://localhost:8080/api/completion
+    * curl -X POST -d "robots are good" https://localhost:8080/api/embedding
 ```
 
 You can also run your own web interface from a static path
@@ -39,12 +39,12 @@ You can also run your own web interface from a static path
 ```bash
 epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding -u ./my-web-interface
 
-Serving UI on http://localhost:8080/ from ./my-web-interface
-Listening with GET and POST on http://localhost:8080/api/completion
+Serving UI on https://localhost:8080/ from ./my-web-interface
+Listening with GET and POST on https://localhost:8080/api/completion
 Examples:
-    * http://localhost:8080/api/completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
-    * curl -X POST -d "robots are good" http://localhost:8080/api/embedding
+    * https://localhost:8080/api/completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous quote:" https://localhost:8080/api/completion
+    * curl -X POST -d "robots are good" https://localhost:8080/api/embedding
 ```
 
 You can also constrain the output grammar with *.gbnf files for things like JSON output
@@ -52,12 +52,12 @@ You can also constrain the output grammar with *.gbnf files for things like JSON
 ```bash
 epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cpp/embedding -g ./json.gbnf
 
-Serving UI on http://localhost:8080/ from built-in UI
-Listening with GET and POST on http://localhost:8080/completion
+Serving UI on https://localhost:8080/ from built-in UI
+Listening with GET and POST on https://localhost:8080/completion
 Examples:
-    * http://localhost:8080/api/completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous quote:" http://localhost:8080/api/completion
-    * curl -X POST -d "robots are good" http://localhost:8080/api/embedding
+    * https://localhost:8080/api/completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous quote:" https://localhost:8080/api/completion
+    * curl -X POST -d "robots are good" https://localhost:8080/api/embedding
 ```
 
 # Constraining to JSON Schema
@@ -101,7 +101,7 @@ epistemology -m ../llama.cpp/phi-2.Q2_K.gguf -e ../llama.cpp/main -d ../llama.cp
 We can now ask the AI questions and now get answers constrained to our JSON format. Since a lot of metadata is lost during conversion to an AI grammar, we should re-iterate in the system prompt what we want to guide the generation better.
 
 ```text
-HTTP POST http://localhost:8080/api/completion
+HTTP POST https://localhost:8080/api/completion
 
 [system]
 I am Argyle, an intellegent assistant, I structure my responses according to JSON schema
