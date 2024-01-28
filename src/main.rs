@@ -4,6 +4,7 @@ use clap::Parser;
 use core::panic;
 use futures::StreamExt;
 use gbnf::Grammar;
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use serde::Deserialize;
 use std::fs;
 use std::io::BufReader;
@@ -77,6 +78,22 @@ struct EpistemologyCliArgs {
     // Port to serve on
     #[arg(short, value_name = "PORT", help = "Port to serve on")]
     port: Option<u16>,
+
+    // HTTPS key file
+    #[arg(
+        short = 'k',
+        value_name = "HTTPS_KEY_FILE",
+        help = "HTTPS key file (optional)"
+    )]
+    https_key_file: Option<PathBuf>,
+
+    // HTTPS cert file
+    #[arg(
+        short = 'c',
+        value_name = "HTTPS_CERT_FILE",
+        help = "HTTPS cert file (optional)"
+    )]
+    https_cert_file: Option<PathBuf>,
 }
 
 #[derive(Deserialize)]
@@ -120,10 +137,22 @@ async fn main() -> std::io::Result<()> {
 
     let origin = cli.origin.unwrap_or("localhost".to_string());
 
+    // ensure we have both key and cert if either is provided
+    if cli.https_key_file.is_some() != cli.https_cert_file.is_some() {
+        panic!("Must provide both HTTPS key and cert files");
+    }
+
+    let protocol = if cli.https_key_file.is_some() {
+        "https"
+    } else {
+        "http"
+    };
+
     // let's print out some helpful information for the user
     if let Some(ui) = &cli.ui {
         println!(
-            "Serving UI on http://{}:{}/ from {}",
+            "Serving UI on {}://{}:{}/ from {}",
+            protocol,
             origin,
             port,
             match fs::canonicalize(ui) {
@@ -132,18 +161,32 @@ async fn main() -> std::io::Result<()> {
             }
         );
     } else {
-        println!("Serving UI on http://{}:{}/ from built-in UI", origin, port);
+        println!(
+            "Serving UI on {}://{}:{}/ from built-in UI",
+            protocol, origin, port
+        );
     }
     println!(
-        r#"Listening with GET and POST on http://{}:{}/api/completion
+        r#"Listening with GET and POST on {}://{}:{}/api/completion
 Examples:
-    * http://{}:{}/api/completion?prompt=famous%20qoute:
-    * curl -X POST -d "famous qoute:" http://{}:{}/api/completion
-    * curl -X POST -d "robots are good" http://{}:{}/api/embedding"#,
-        origin, port, origin, port, origin, port, origin, port
+    * {}://{}:{}/api/completion?prompt=famous%20qoute:
+    * curl -X POST -d "famous qoute:" {}://{}:{}/api/completion
+    * curl -X POST -d "robots are good" {}://{}:{}/api/embedding"#,
+        protocol,
+        origin,
+        port,
+        protocol,
+        origin,
+        port,
+        protocol,
+        origin,
+        port,
+        protocol,
+        origin,
+        port
     );
 
-    HttpServer::new(move || {
+    let s = HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin_fn(|_, _req_head| true)
             .allowed_methods(vec!["GET", "POST"]);
@@ -176,10 +219,20 @@ Examples:
         }
 
         a
-    })
-    .bind(format!("{}:{}", origin, port))?
-    .run()
-    .await
+    });
+
+    if let (Some(key_file), Some(cert_file)) = (&cli.https_key_file, &cli.https_cert_file) {
+        let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+        builder
+            .set_private_key_file(key_file, SslFiletype::PEM)
+            .unwrap();
+
+        builder.set_certificate_chain_file(cert_file).unwrap();
+        s.bind_openssl("127.0.0.1:8443", builder)?.run().await
+    } else {
+        println!("Serving HTTP on http://{}:{}/", origin, port);
+        s.bind(format!("{}:{}", origin, port))?.run().await
+    }
 }
 
 enum Mode {
