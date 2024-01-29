@@ -38,12 +38,20 @@ struct EpistemologyCliArgs {
     )]
     embedding_path: Option<PathBuf>,
 
+    // num threads
     #[arg(
-        short = 'n',
+        short = 't',
+        value_name = "NUM_THREADS",
+        help = "Number of threads to use for LLM generation (default: 4)"
+    )]
+    threads: Option<u32>,
+
+    #[arg(
+        alias = "ngl",
         value_name = "NUM_GPU_LAYERS",
         help = "Number of layers to delegate to GPU"
     )]
-    num_layers: Option<u32>,
+    n_gpu_layers: Option<u32>,
 
     #[arg(
         short,
@@ -52,8 +60,16 @@ struct EpistemologyCliArgs {
     )]
     grammar: Option<PathBuf>,
 
+    //context length
     #[arg(
-        short,
+        short = 'c',
+        value_name = "CONTEXT_LENGTH",
+        help = "Context length of LLM generation (default: 512)"
+    )]
+    ctx_size: Option<u32>,
+
+    #[arg(
+        short = 'j',
         value_name = "JSON_SCHEMA_PATH",
         help = "Path to JSON schema file to constrain output (optional)"
     )]
@@ -62,40 +78,32 @@ struct EpistemologyCliArgs {
     #[arg(short, value_name = "UI_PATH", help = "Path to UI static files folder")]
     ui: Option<PathBuf>,
 
-    // Output length with default 128
+    // Output length with default 512
     #[arg(
-        short = 't',
+        short = 'n',
         value_name = "OUTPUT_LENGTH",
         help = "Output length of LLM generation"
     )]
-    tokens_max: Option<u32>,
+    n_predict: Option<i32>,
 
     // Optional origin instead of localhost
     #[arg(
-        short = 'o',
-        value_name = "ORIGIN",
-        help = "Optional origin instead of localhost"
+        short = 'a',
+        value_name = "ADDRESS",
+        help = "Optional address instead of default (e.g 0.0.0.0), default is localhost"
     )]
-    origin: Option<String>,
+    address: Option<String>,
 
     // Port to serve on
     #[arg(short, value_name = "PORT", help = "Port to serve on")]
     port: Option<u16>,
 
     // HTTPS key file
-    #[arg(
-        short = 'k',
-        value_name = "HTTPS_KEY_FILE",
-        help = "HTTPS key file (optional)"
-    )]
+    #[arg(value_name = "HTTPS_KEY_FILE", help = "HTTPS key file (optional)")]
     https_key_file: Option<PathBuf>,
 
     // HTTPS cert file
-    #[arg(
-        short = 'c',
-        value_name = "HTTPS_CERT_FILE",
-        help = "HTTPS cert file (optional)"
-    )]
+    #[arg(value_name = "HTTPS_CERT_FILE", help = "HTTPS cert file (optional)")]
     https_cert_file: Option<PathBuf>,
 }
 
@@ -156,7 +164,7 @@ async fn main() -> std::io::Result<()> {
     // let's make these parameters available to the web server for all requests to use
     let app_data = web::Data::new(cli.clone());
 
-    let origin = cli.origin.unwrap_or("localhost".to_string());
+    let address = cli.address.unwrap_or("localhost".to_string());
 
     // ensure we have both key and cert if either is provided
     if cli.https_key_file.is_some() != cli.https_cert_file.is_some() {
@@ -170,7 +178,7 @@ async fn main() -> std::io::Result<()> {
         println!(
             "Serving UI on {}://{}:{}/ from {}",
             protocol,
-            origin,
+            address,
             port,
             match fs::canonicalize(ui) {
                 Ok(full_path) => full_path.display().to_string(),
@@ -180,7 +188,7 @@ async fn main() -> std::io::Result<()> {
     } else {
         println!(
             "Serving UI on {}://{}:{}/ from built-in UI",
-            protocol, origin, port
+            protocol, address, port
         );
     }
     println!(
@@ -190,16 +198,16 @@ Examples:
     * curl -X POST -d "famous qoute:" {}://{}:{}/api/completion
     * curl -X POST -d "robots are good" {}://{}:{}/api/embedding"#,
         protocol,
-        origin,
+        address,
         port,
         protocol,
-        origin,
+        address,
         port,
         protocol,
-        origin,
+        address,
         port,
         protocol,
-        origin,
+        address,
         port
     );
 
@@ -273,11 +281,11 @@ Examples:
 
         let sc = config.with_single_cert(cert_chain, keys.remove(0)).unwrap();
 
-        s.bind_rustls(format!("{}:{}", origin, port), sc)?
+        s.bind_rustls(format!("{}:{}", address, port), sc)?
             .run()
             .await
     } else {
-        let cert = rcgen::generate_simple_self_signed(vec![origin.to_owned()]).unwrap();
+        let cert = rcgen::generate_simple_self_signed(vec![address.to_owned()]).unwrap();
         let cert_file = cert.serialize_der().unwrap();
         let key_file = cert.serialize_private_key_der();
         let pk = PrivateKey(key_file);
@@ -288,7 +296,7 @@ Examples:
             .with_no_client_auth();
 
         let sc: rustls::ServerConfig = config.with_single_cert(vec![cert_chain], pk).unwrap();
-        s.bind_rustls(format!("{}:{}", origin, port), sc)?
+        s.bind_rustls(format!("{}:{}", address, port), sc)?
             .run()
             .await
     }
@@ -336,12 +344,12 @@ fn run_llama(
         Err(err) => panic!("Failed to execute AI: {}", err),
     };
 
-    let n_str = args.tokens_max.unwrap_or(128).to_string();
+    let n_predict = args.n_predict.unwrap_or(-1).to_string();
     let mut vec_cmd: Vec<String> = vec![
         "-m".to_string(),
         full_model_path.to_string(),
         "-n".to_string(),
-        n_str,
+        n_predict,
         "--log-disable".to_string(),
     ];
 
@@ -370,9 +378,19 @@ fn run_llama(
         vec_cmd.push(g_str.to_string());
     }
 
-    if let Some(num_layers) = &args.num_layers {
+    if let Some(num_layers) = &args.n_gpu_layers {
         vec_cmd.push("-ngl".to_string());
         vec_cmd.push(num_layers.to_string());
+    }
+
+    if let Some(context_length) = &args.ctx_size {
+        vec_cmd.push("-c".to_string());
+        vec_cmd.push(context_length.to_string());
+    }
+
+    if let Some(threads) = &args.threads {
+        vec_cmd.push("-t".to_string());
+        vec_cmd.push(threads.to_string());
     }
 
     println!("Running LLM: {} ...", &vec_cmd.join(" "));
