@@ -123,8 +123,8 @@
             // make sure we never have more than 2 newlines in a row, if we do replace them with two newlines
             // use regex to replace all instances of 3 or more newlines with 2 newlines
             // this is a basic cleanup good for almost all use cases
-            const regex = /(\n{2,})/g;
-            textarea.value = new_text.replace(regex, "\n\n").trim();
+            const regex = /(\n{3,})/g;
+            textarea.value = new_text.replace(regex, "\n\n").trimStart();
 
             // scroll to bottom
             textarea.scrollTop = textarea.scrollHeight;
