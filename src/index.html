@@ -3,6 +3,7 @@
     <title>Epistemology</title>
     <link rel="stylesheet" href="/index.css" />
     <link rel="icon" type="image/png" href="/icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       /* include font Inter-Light.ttf */
       @font-face {
@@ -21,6 +22,12 @@
         outline: none;
       }
 
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+      }
+
       body {
         /* make a grid layout where the text area takes up most of the screen and two buttons at bottom */
         display: grid;
@@ -30,6 +37,10 @@
           "text"
           "complete"
           "embedding";
+        grid-row-gap: 1rem;
+        grid-column-gap: 1rem;
+        margin: 1rem;
+        height: calc(100vh - 2rem);
       }
       textarea {
         width: 100%;
@@ -49,11 +60,11 @@
         border-radius: var(--radius-2);
         padding: var(--size-fluid-3);
         box-shadow: var(--shadow-2);
-        margin-top: 1rem;
       }
     </style>
   </head>
   <body>
+    <div></div>
     <textarea
       autocomplete="off"
       autocorrect="off"
