@@ -1,3 +1,9 @@
+# v0.4.1
+
+* cleanup interface
+* add threads
+* add context window control
+
 # v0.4.0
 
 * mobile styling
