@@ -25,7 +25,8 @@ struct EpistemologyCliArgs {
     model: PathBuf,
 
     #[arg(
-        short,
+        short = 'e',
+        long,
         value_name = "LLAMMA_CPP_MAIN_EXE_PATH",
         help = "Path to LLAMMA CPP main executable"
     )]
@@ -33,6 +34,7 @@ struct EpistemologyCliArgs {
 
     #[arg(
         short = 'd',
+        long,
         value_name = "LLAMMA_CPP_EMBEDDING_EXE_PATH",
         help = "Path to LLAMMA CPP embedding executable"
     )]
@@ -41,20 +43,23 @@ struct EpistemologyCliArgs {
     // num threads
     #[arg(
         short = 't',
+        long,
         value_name = "NUM_THREADS",
         help = "Number of threads to use for LLM generation (default: 4)"
     )]
     threads: Option<u32>,
 
     #[arg(
-        alias = "ngl",
+        short = 'l',
+        long,
         value_name = "NUM_GPU_LAYERS",
         help = "Number of layers to delegate to GPU"
     )]
     n_gpu_layers: Option<u32>,
 
     #[arg(
-        short,
+        short = 'g',
+        long,
         value_name = "GRAMMAR_PATH",
         help = "Path to grammar file (optional)"
     )]
@@ -63,6 +68,7 @@ struct EpistemologyCliArgs {
     //context length
     #[arg(
         short = 'c',
+        long,
         value_name = "CONTEXT_LENGTH",
         help = "Context length of LLM generation (default: 512)"
     )]
@@ -70,17 +76,24 @@ struct EpistemologyCliArgs {
 
     #[arg(
         short = 'j',
+        long,
         value_name = "JSON_SCHEMA_PATH",
         help = "Path to JSON schema file to constrain output (optional)"
     )]
     json_schema: Option<PathBuf>,
 
-    #[arg(short, value_name = "UI_PATH", help = "Path to UI static files folder")]
+    #[arg(
+        short,
+        long,
+        value_name = "UI_PATH",
+        help = "Path to UI static files folder"
+    )]
     ui: Option<PathBuf>,
 
     // Output length with default 512
     #[arg(
         short = 'n',
+        long,
         value_name = "OUTPUT_LENGTH",
         help = "Output length of LLM generation"
     )]
@@ -89,21 +102,30 @@ struct EpistemologyCliArgs {
     // Optional origin instead of localhost
     #[arg(
         short = 'a',
+        long,
         value_name = "ADDRESS",
         help = "Optional address instead of default (e.g 0.0.0.0), default is localhost"
     )]
     address: Option<String>,
 
     // Port to serve on
-    #[arg(short, value_name = "PORT", help = "Port to serve on")]
+    #[arg(short, long, value_name = "PORT", help = "Port to serve on")]
     port: Option<u16>,
 
     // HTTPS key file
-    #[arg(value_name = "HTTPS_KEY_FILE", help = "HTTPS key file (optional)")]
+    #[arg(
+        long,
+        value_name = "HTTPS_KEY_FILE",
+        help = "HTTPS key file (optional)"
+    )]
     https_key_file: Option<PathBuf>,
 
     // HTTPS cert file
-    #[arg(value_name = "HTTPS_CERT_FILE", help = "HTTPS cert file (optional)")]
+    #[arg(
+        long,
+        value_name = "HTTPS_CERT_FILE",
+        help = "HTTPS cert file (optional)"
+    )]
     https_cert_file: Option<PathBuf>,
 }
 
