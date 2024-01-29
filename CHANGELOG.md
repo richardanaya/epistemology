@@ -1,3 +1,7 @@
+# v0.4.0
+
+* mobile styling
+
 # v0.3.8
 
 * use rustls
