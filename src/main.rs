@@ -1,5 +1,6 @@
 use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use anyhow::Result;
 use clap::Parser;
 use core::panic;
 use futures::StreamExt;
@@ -342,8 +343,9 @@ fn run_streaming_llm(mode: Mode, args: &EpistemologyCliArgs, prompt: String) -> 
 
     let a = args.clone();
     // Spawn a thread to execute the command and send output to the channel
-    thread::spawn(move || {
-        run_llama(mode, &a, prompt, tx);
+    thread::spawn(move || match run_llama(mode, &a, prompt, tx) {
+        Ok(_) => {}
+        Err(_) => eprintln!("Something went wrong while executing the AI"),
     });
 
     // Convert the synchronous Flume receiver into an asynchronous stream
@@ -360,7 +362,7 @@ fn run_llama(
     args: &EpistemologyCliArgs,
     prompt: String,
     sender: mpsc::UnboundedSender<String>,
-) {
+) -> Result<()> {
     let full_model_path = match fs::canonicalize(&args.model) {
         Ok(full_path) => full_path.display().to_string(),
         Err(err) => panic!("Failed to execute AI: {}", err),
@@ -390,12 +392,12 @@ fn run_llama(
             Ok(full_path) => full_path.display().to_string(),
             Err(err) => panic!("Failed to execute AI: {}", err),
         };
-        let json_schema_str = fs::read_to_string(full_json_schema_path).unwrap();
+        let json_schema_str = fs::read_to_string(full_json_schema_path)?;
         let g = Grammar::from_json_schema(&json_schema_str);
         if let Err(err) = g {
             panic!("Failed to execute AI: {}", err);
         }
-        let g_str = g.unwrap().to_string();
+        let g_str = g?.to_string();
         vec_cmd.push("--grammar".to_string());
         vec_cmd.push(g_str.to_string());
     }
@@ -423,14 +425,24 @@ fn run_llama(
 
     let mut child = Command::new(match mode {
         Mode::Completion => args.exe_path.clone(),
-        Mode::Embedding => args.embedding_path.clone().unwrap(),
+        Mode::Embedding => match args.embedding_path.clone() {
+            Some(path) => path,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Embedding path is required for embedding mode"
+                ))
+            }
+        },
     })
     .args(&vec_cmd)
     .stdout(Stdio::piped())
     .spawn()
     .expect("failed to execute child");
 
-    let child_stdout = BufReader::new(child.stdout.take().unwrap());
+    let child_stdout = BufReader::new(match child.stdout.take() {
+        Some(stdout) => stdout,
+        None => return Err(anyhow::anyhow!("Failed to get child stdout")),
+    });
     const BUFFER_SIZE: usize = 1; // Set to 1 for reading one byte at a time
 
     let mut reader = BufReader::with_capacity(BUFFER_SIZE, child_stdout);
@@ -441,7 +453,7 @@ fn run_llama(
             Ok(0) => break, // EOF reached
             Ok(_) => {
                 let character = buffer[0] as char; // Convert byte to char
-                sender.send(character.to_string()).unwrap(); // Send the character as a String
+                sender.send(character.to_string())?; // Send the character as a String
             }
             Err(e) => {
                 eprintln!("Error reading from child process: {}", e);
@@ -449,4 +461,5 @@ fn run_llama(
             }
         }
     }
+    Ok(())
 }
