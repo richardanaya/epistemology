@@ -61,4 +61,5 @@ input {
   font-size: 16px;
   touch-action: manipulation;
   width: 100%;
+  width: -webkit-fill-available;
 }
