@@ -1,20 +1,18 @@
 import { LitElement, html } from "./lit.js";
 
 class EpistemologyElement extends LitElement {
-  static properties = {
-    messages: { type: Array, attibute: false, state: true },
-  };
-
   messages = [];
+
+  pending = false;
 
   constructor() {
     super();
   }
 
   async sendMessage() {
-    const input = this.shadowRoot.getElementById("user-input");
+    const input = this.querySelector("#user-input");
     const message = input.value;
-    const context = this.shadowRoot.getElementById("context").value;
+    const context = this.querySelector("#context").value;
     let newMessages = [...this.messages];
     newMessages.push({
       role: "user",
@@ -33,10 +31,12 @@ class EpistemologyElement extends LitElement {
     const urlHost = window.location.host;
     const urlPath = "/api/chat";
     const url = `https://${urlHost}${urlPath}`;
+    this.pending = true;
+    this.requestUpdate();
     const response = await this.callChat(url, newMessages);
     newMessages.push(response);
     this.messages = newMessages.filter((message) => message.role !== "system");
-    // scroll to bottom of page
+    this.pending = false;
     window.scrollTo(0, document.body.scrollHeight);
     this.requestUpdate();
   }
@@ -67,10 +67,14 @@ class EpistemologyElement extends LitElement {
     return data;
   }
 
+  createRenderRoot() {
+    return this;
+  }
+
   render() {
     return html`${this.messages.map(
-        (message) =>
-          html`<div>
+        (message, i) =>
+          html`<div style="${i !== 0 ? "margin-top: 1rem" : ""}">
             <div><b>${message.role}</b></div>
             <div>${message.content}</div>
           </div> `
@@ -82,7 +86,9 @@ class EpistemologyElement extends LitElement {
         <input id="user-input" type="text" placeholder="Type a message" />
       </div>
       <div>
-        <button @click="${this.sendMessage}">Send</button>
+        <button @click="${this.sendMessage}">
+          ${this.pending ? "Processing" : "Send"}
+        </button>
       </div>`;
   }
 }

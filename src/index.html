@@ -3,66 +3,10 @@
     <title>Epistemology</title>
     <link rel="stylesheet" href="/index.css" />
     <link rel="icon" type="image/png" href="/icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      /* include font Inter-Light.ttf */
-      @font-face {
-        font-family: "Inter";
-        src: url("/Inter-Light.ttf");
-      }
-
-      * {
-        font-family: Inter;
-      }
-
-      input:focus,
-      select:focus,
-      textarea:focus,
-      button:focus {
-        outline: none;
-      }
-
-      body,
-      html {
-        margin: 0;
-        padding: 0;
-      }
-
-      body {
-        /* make a grid layout where the text area takes up most of the screen and two buttons at bottom */
-        display: grid;
-        grid-template-rows: 1fr auto auto;
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "text"
-          "complete"
-          "embedding";
-        grid-row-gap: 0.5rem;
-        grid-column-gap: 0.5rem;
-        margin: 1rem;
-        height: calc(100vh - 2rem);
-      }
-      textarea {
-        width: 100%;
-        border-radius: var(--radius-2);
-        padding: var(--size-fluid-3);
-        box-shadow: var(--shadow-2);
-        border: none;
-        grid-area: text;
-        padding: 1rem;
-        font-size: 1.2rem;
-        font-weight: 400;
-      }
-      button {
-        border: none;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        border-radius: var(--radius-2);
-        padding: var(--size-fluid-1);
-        box-shadow: var(--shadow-2);
-      }
-    </style>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
   </head>
   <body>
     <epistemology-app></epistemology-app>
