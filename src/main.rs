@@ -9,6 +9,7 @@ use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::certs;
 use rustls_pemfile::rsa_private_keys;
 use serde::Deserialize;
+use serde::Serialize;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
@@ -19,6 +20,31 @@ use std::thread;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
+#[derive(Serialize, Deserialize)]
+struct OlamaResponse {
+    model: String,
+    created_at: String,
+    message: Message,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Message {
+    role: String,
+    content: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct OlamaRequest {
+    model: String,
+    messages: Vec<Message>,
+    stream: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ChatRequest {
+    messages: Vec<Message>,
+}
+
 #[derive(Parser, Clone)]
 #[command(author, version, about, long_about = None)]
 struct EpistemologyCliArgs {
@@ -26,12 +52,19 @@ struct EpistemologyCliArgs {
     model: PathBuf,
 
     #[arg(
+        short,
+        value_name = "OLLAMA_HOST",
+        help = "Address of OLLAMA server http://localhost:11434"
+    )]
+    ollama_host: Option<String>,
+
+    #[arg(
         short = 'e',
         long,
         value_name = "LLAMMA_CPP_MAIN_EXE_PATH",
         help = "Path to LLAMMA CPP main executable"
     )]
-    exe_path: PathBuf,
+    exe_path: Option<PathBuf>,
 
     #[arg(
         short = 'd',
@@ -149,11 +182,30 @@ async fn handle_completion_post(
     run_streaming_llm(Mode::Completion, &data, body)
 }
 
+async fn handle_chat_post(
+    data: web::Data<EpistemologyCliArgs>,
+    body: web::Json<ChatRequest>,
+) -> impl Responder {
+    run_chat(Mode::Chat, &data, body.into_inner())
+}
+
 async fn handle_embedding_post(
     data: web::Data<EpistemologyCliArgs>,
     body: String,
 ) -> impl Responder {
     run_streaming_llm(Mode::Embedding, &data, body)
+}
+
+async fn app() -> impl Responder {
+    HttpResponse::Ok()
+        .insert_header(("Content-Type", "application/javascript"))
+        .body(include_str!("./app.js"))
+}
+
+async fn lit() -> impl Responder {
+    HttpResponse::Ok()
+        .insert_header(("Content-Type", "application/javascript"))
+        .body(include_str!("./lit.js"))
 }
 
 async fn index() -> impl Responder {
@@ -246,6 +298,7 @@ Examples:
                     .route(web::get().to(handle_completion_get))
                     .route(web::post().to(handle_completion_post)),
             )
+            .service(web::resource("/api/chat").route(web::post().to(handle_chat_post)))
             .service(web::resource("/api/embedding").route(web::post().to(handle_embedding_post)));
 
         // let's serve the UI if the user provided a path to a static folder of files
@@ -266,6 +319,8 @@ Examples:
             a = a.route("/", web::get().to(index));
             a = a.route("/index.css", web::get().to(css));
             a = a.route("/Inter-Light.ttf", web::get().to(inter));
+            a = a.route("/app.js", web::get().to(app));
+            a = a.route("/lit.js", web::get().to(lit));
             a = a.route("/icon.png", web::get().to(icon));
         }
 
@@ -325,7 +380,9 @@ Examples:
     }
 }
 
+#[derive(PartialEq)]
 enum Mode {
+    Chat,
     Completion,
     Embedding,
 }
@@ -342,11 +399,18 @@ fn run_streaming_llm(mode: Mode, args: &EpistemologyCliArgs, prompt: String) -> 
     let (tx, rx) = mpsc::unbounded_channel();
 
     let a = args.clone();
-    // Spawn a thread to execute the command and send output to the channel
-    thread::spawn(move || match run_llama(mode, &a, prompt, tx) {
-        Ok(_) => {}
-        Err(_) => eprintln!("Something went wrong while executing the AI"),
-    });
+
+    if args.ollama_host.is_some() {
+        return HttpResponse::BadRequest()
+            .content_type("text/plain")
+            .body("Ollama completions not supported");
+    } else {
+        // Spawn a thread to execute the command and send output to the channel
+        thread::spawn(move || match run_llama_cli(mode, &a, prompt, tx) {
+            Ok(_) => {}
+            Err(_) => eprintln!("Something went wrong while executing the llama.cpp exe"),
+        });
+    }
 
     // Convert the synchronous Flume receiver into an asynchronous stream
     let async_stream = UnboundedReceiverStream::from(rx)
@@ -357,7 +421,87 @@ fn run_streaming_llm(mode: Mode, args: &EpistemologyCliArgs, prompt: String) -> 
         .streaming(async_stream)
 }
 
-fn run_llama(
+fn run_chat(mode: Mode, args: &EpistemologyCliArgs, chat_request: ChatRequest) -> impl Responder {
+    if let Mode::Embedding = mode {
+        if args.embedding_path.is_none() {
+            return HttpResponse::BadRequest()
+                .content_type("text/plain")
+                .body("Embedding mode requires embedding path, look at help for more information");
+        }
+    }
+
+    let (tx, rx) = mpsc::unbounded_channel();
+
+    let a = args.clone();
+
+    if args.ollama_host.is_some() {
+        thread::spawn(move || match run_ollama(mode, &a, chat_request, tx) {
+            Ok(_) => {}
+            Err(e) => eprintln!("{:?}", e),
+        });
+    } else {
+        return HttpResponse::BadRequest()
+            .content_type("text/plain")
+            .body("Chat mode not supported by llama.cpp");
+    }
+
+    // Convert the synchronous Flume receiver into an asynchronous stream
+    let async_stream = UnboundedReceiverStream::from(rx)
+        .map(|line| Ok::<_, actix_web::Error>(web::Bytes::from(line)));
+
+    HttpResponse::Ok()
+        .content_type("text/plain")
+        .streaming(async_stream)
+}
+
+fn run_ollama(
+    mode: Mode,
+    args: &EpistemologyCliArgs,
+    chat_request: ChatRequest,
+    sender: mpsc::UnboundedSender<String>,
+) -> Result<()> {
+    let messages = chat_request.messages;
+    if mode != Mode::Chat {
+        return Err(anyhow::anyhow!("Ollama only supports chat mode"));
+    }
+    let host = match &args.ollama_host {
+        Some(h) => h,
+        None => return Err(anyhow::anyhow!("Ollama host is required")),
+    };
+
+    let model = args.model.to_str();
+
+    let model = match model {
+        Some(m) => m,
+        None => return Err(anyhow::anyhow!("Model path is invalid")),
+    };
+
+    let url = format!("{}/api/chat", host);
+
+    let client = reqwest::blocking::Client::new();
+
+    let data: OlamaRequest = OlamaRequest {
+        model: model.to_string(),
+        messages: messages,
+        stream: false,
+    };
+
+    let response = client
+        .post(&url)
+        .json(&data)
+        .send()
+        .map_err(|e| anyhow::anyhow!("Failed to send request: {}", e))?;
+
+    let body = response
+        .json::<OlamaResponse>()
+        .map_err(|e| anyhow::anyhow!("Failed to get response body: {}", e))?;
+
+    sender.send(serde_json::to_string(&body.message).unwrap())?;
+
+    Ok(())
+}
+
+fn run_llama_cli(
     mode: Mode,
     args: &EpistemologyCliArgs,
     prompt: String,
@@ -424,7 +568,14 @@ fn run_llama(
     vec_cmd.push(prompt.clone());
 
     let mut child = Command::new(match mode {
-        Mode::Completion => args.exe_path.clone(),
+        Mode::Completion => match args.exe_path.clone() {
+            Some(path) => path,
+            None => {
+                return Err(anyhow::anyhow!(
+                    "LLM CPP main executable path is required for completion mode"
+                ))
+            }
+        },
         Mode::Embedding => match args.embedding_path.clone() {
             Some(path) => path,
             None => {
@@ -433,6 +584,7 @@ fn run_llama(
                 ))
             }
         },
+        Mode::Chat => return Err(anyhow::anyhow!("Chat mode is not supported by llama.cpp")),
     })
     .args(&vec_cmd)
     .stdout(Stdio::piped())

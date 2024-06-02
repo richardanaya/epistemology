@@ -1,0 +1,89 @@
+import { LitElement, html } from "./lit.js";
+
+class EpistemologyElement extends LitElement {
+  static properties = {
+    messages: { type: Array, attibute: false, state: true },
+  };
+
+  messages = [];
+
+  constructor() {
+    super();
+  }
+
+  async sendMessage() {
+    const input = this.shadowRoot.getElementById("user-input");
+    const message = input.value;
+    const context = this.shadowRoot.getElementById("context").value;
+    let newMessages = [...this.messages];
+    newMessages.push({
+      role: "user",
+      content: message,
+    });
+    //filter outSystem context
+    newMessages = newMessages.filter((message) => message.role !== "system");
+
+    // add new system context to front
+    newMessages.unshift({
+      role: "system",
+      content: context,
+    });
+
+    input.value = "";
+    const urlHost = window.location.host;
+    const urlPath = "/api/chat";
+    const url = `https://${urlHost}${urlPath}`;
+    const response = await this.callChat(url, newMessages);
+    newMessages.push(response);
+    this.messages = newMessages.filter((message) => message.role !== "system");
+    // scroll to bottom of page
+    window.scrollTo(0, document.body.scrollHeight);
+    this.requestUpdate();
+  }
+
+  async callChat(url, messages) {
+    // fetch a streaming response using fetc
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ messages }),
+    });
+
+    const reader = response.body.getReader();
+    let data = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      data += new TextDecoder().decode(value);
+    }
+
+    // turn data into json
+    data = JSON.parse(data);
+
+    return data;
+  }
+
+  render() {
+    return html`${this.messages.map(
+        (message) =>
+          html`<div>
+            <div><b>${message.role}</b></div>
+            <div>${message.content}</div>
+          </div> `
+      )}
+      <div>
+        <input id="context" type="text" placeholder="System context" />
+      </div>
+      <div>
+        <input id="user-input" type="text" placeholder="Type a message" />
+      </div>
+      <div>
+        <button @click="${this.sendMessage}">Send</button>
+      </div>`;
+  }
+}
+customElements.define("epistemology-app", EpistemologyElement);

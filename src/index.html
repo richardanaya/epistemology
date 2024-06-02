@@ -65,74 +65,7 @@
     </style>
   </head>
   <body>
-    <div></div>
-    <textarea
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    ></textarea>
-    <button id="complete" type="submit">Complete (CTRL + Enter)</button>
-    <div id="error"></div>
-    <script>
-      const textarea = document.querySelector("textarea");
-      const completeButton = document.querySelector("#complete");
-
-      textarea.focus();
-
-      // ctrl + enter to complete
-      textarea.addEventListener("keydown", (event) => {
-        if (event.ctrlKey && event.key === "Enter") {
-          completeButton.click();
-        }
-      });
-
-      completeButton.addEventListener("click", async () => {
-        completeButton.disabled = true;
-        textarea.disabled = true;
-        const response = await fetch("/api/completion", {
-          method: "POST",
-          body: textarea.value,
-        });
-
-        if (!response.body) {
-          throw new Error("ReadableStream not supported in this browser.");
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        let firstChunk = true;
-        while (true) {
-          const { value, done } = await reader.read();
-
-          if (done) {
-            break;
-          }
-
-          const chunks = decoder.decode(value, { stream: true });
-
-          // Process each character in the chunk
-          for (let chunk of chunks) {
-            if (firstChunk) {
-              firstChunk = false;
-              textarea.value = "";
-            }
-            const new_text = textarea.value + chunk;
-
-            // make sure we never have more than 2 newlines in a row, if we do replace them with two newlines
-            // use regex to replace all instances of 3 or more newlines with 2 newlines
-            // this is a basic cleanup good for almost all use cases
-            const regex = /(\n{3,})/g;
-            textarea.value = new_text.replace(regex, "\n\n").trimStart();
-
-            // scroll to bottom
-            textarea.scrollTop = textarea.scrollHeight;
-          }
-        }
-        textarea.disabled = false;
-        completeButton.disabled = false;
-      });
-    </script>
+    <epistemology-app></epistemology-app>
+    <script type="module" src="./app.js"></script>
   </body>
 </html>
