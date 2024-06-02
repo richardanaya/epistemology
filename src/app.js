@@ -85,7 +85,7 @@ class EpistemologyElement extends LitElement {
       <div>
         <input id="user-input" type="text" placeholder="Type a message" />
       </div>
-      <div>
+      <div style="margin-bottom: 1rem">
         <button @click="${this.sendMessage}">
           ${this.pending ? "Processing" : "Send"}
         </button>
