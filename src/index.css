@@ -55,6 +55,7 @@ button {
   padding: var(--size-fluid-1);
   box-shadow: var(--shadow-2);
   height: 2rem;
+  color: black;
 }
 input {
   margin-top: 1rem;

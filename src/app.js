@@ -41,6 +41,14 @@ class EpistemologyElement extends LitElement {
     this.requestUpdate();
   }
 
+  clearMessages() {
+    const input = this.querySelector("#user-input");
+    this.pending = false;
+    input.value = "";
+    this.messages = [];
+    this.requestUpdate();
+  }
+
   async callChat(url, messages) {
     // fetch a streaming response using fetc
     const response = await fetch(url, {
@@ -85,10 +93,13 @@ class EpistemologyElement extends LitElement {
       <div>
         <input id="user-input" type="text" placeholder="Type a message" />
       </div>
-      <div style="margin-bottom: 1rem">
+      <div>
         <button @click="${this.sendMessage}">
           ${this.pending ? "Processing" : "Send"}
         </button>
+      </div>
+      <div style="margin-bottom: 1rem">
+        <button @click="${this.clearMessages}">${"Clear"}</button>
       </div>`;
   }
 }

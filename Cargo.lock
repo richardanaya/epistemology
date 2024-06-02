@@ -626,7 +626,7 @@ dependencies = [
 
 [[package]]
 name = "epistemology"
-version = "0.4.8"
+version = "0.4.9"
 dependencies = [
  "actix-cors",
  "actix-files",
