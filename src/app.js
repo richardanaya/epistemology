@@ -21,6 +21,9 @@ class EpistemologyElement extends LitElement {
     //filter outSystem context
     newMessages = newMessages.filter((message) => message.role !== "system");
 
+    this.messages = newMessages;
+    this.requestUpdate();
+
     // add new system context to front
     newMessages.unshift({
       role: "system",
@@ -88,10 +91,24 @@ class EpistemologyElement extends LitElement {
           </div> `
       )}
       <div>
-        <input id="context" type="text" placeholder="System context" />
+        <input
+          id="context"
+          type="text"
+          placeholder="System context"
+          autocomplete="off"
+          spellcheck="false"
+          autocorrect="off"
+        />
       </div>
       <div>
-        <input id="user-input" type="text" placeholder="Type a message" />
+        <input
+          id="user-input"
+          type="text"
+          placeholder="Type a message"
+          autocomplete="off"
+          spellcheck="false"
+          autocorrect="off"
+        />
       </div>
       <div>
         <button @click="${this.sendMessage}">

@@ -56,6 +56,7 @@ button {
   box-shadow: var(--shadow-2);
   height: 2rem;
   color: black;
+  font-size: 16px;
 }
 input {
   margin-top: 1rem;
@@ -63,4 +64,5 @@ input {
   touch-action: manipulation;
   width: 100%;
   width: -webkit-fill-available;
+  height: 2rem;
 }
