@@ -81,7 +81,7 @@ class EpistemologyElement extends LitElement {
   detectDoubleTapClosure(index) {
     let lastTap = 0;
 
-    return function detectDoubleTap(event) {
+    return function detcaectDoubleTap(event) {
       const curTime = new Date().getTime();
       const tapLen = curTime - lastTap;
 
@@ -111,7 +111,7 @@ class EpistemologyElement extends LitElement {
             @touchstart="${this.detectDoubleTapClosure(i)}"
           >
             <div><b>${message.role}</b></div>
-            <div>${message.content}</div>
+            <div style="user-select: auto">${message.content}</div>
           </div> `
       )}
       <div>
