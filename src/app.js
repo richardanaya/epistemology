@@ -78,6 +78,27 @@ class EpistemologyElement extends LitElement {
     return data;
   }
 
+  detectDoubleTapClosure(index) {
+    let lastTap = 0;
+
+    return function detectDoubleTap(event) {
+      const curTime = new Date().getTime();
+      const tapLen = curTime - lastTap;
+
+      if (tapLen < 500 && tapLen > 0) {
+        // remove message at index and refresh
+        let newMessages = [...this.messages];
+        newMessages.splice(index, 1);
+        this.messages = newMessages;
+        this.requestUpdate();
+      } else {
+        // do nothing
+      }
+
+      lastTap = curTime;
+    };
+  }
+
   createRenderRoot() {
     return this;
   }
@@ -85,7 +106,10 @@ class EpistemologyElement extends LitElement {
   render() {
     return html`${this.messages.map(
         (message, i) =>
-          html`<div style="${i !== 0 ? "margin-top: 1rem" : ""}">
+          html`<div
+            style="${i !== 0 ? "margin-top: 1rem" : ""}"
+            @touchstart="${this.detectDoubleTapClosure(i)}"
+          >
             <div><b>${message.role}</b></div>
             <div>${message.content}</div>
           </div> `
