@@ -33,7 +33,6 @@ body {
   grid-row-gap: 0.5rem;
   grid-column-gap: 0.5rem;
   margin: 1rem;
-  height: calc(100vh - 2rem);
 }
 textarea {
   width: 100%;
