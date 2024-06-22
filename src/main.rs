@@ -21,23 +21,36 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 #[derive(Serialize, Deserialize)]
-struct OlamaResponse {
-    model: String,
-    created_at: String,
-    message: Message,
-}
-
-#[derive(Serialize, Deserialize)]
 struct Message {
     role: String,
     content: String,
 }
 
 #[derive(Serialize, Deserialize)]
-struct OlamaRequest {
+struct Choice {
+    index: f64,
+    message: Message,
+    logprobs: Option<String>,
+    finish_reason: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Usage {
+    prompt_tokens: f64,
+    completion_tokens: f64,
+    total_tokens: f64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct LlamaResponse {
+    created: f64,
+    choices: Vec<Choice>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct LlamaRequest {
     model: String,
     messages: Vec<Message>,
-    stream: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -49,14 +62,14 @@ struct ChatRequest {
 #[command(author, version, about, long_about = None)]
 struct EpistemologyCliArgs {
     #[arg(short, value_name = "GGUF_MODEL", help = "Path to GGUF model")]
-    model: PathBuf,
+    model: Option<PathBuf>,
 
     #[arg(
         short,
-        value_name = "OLLAMA_HOST",
-        help = "Address of OLLAMA server http://localhost:11434"
+        value_name = "LLAMA_HOST",
+        help = "Address of LLAMA server http://localhost:11434"
     )]
-    ollama_host: Option<String>,
+    llama_host: Option<String>,
 
     #[arg(
         short = 'e',
@@ -84,8 +97,7 @@ struct EpistemologyCliArgs {
     threads: Option<u32>,
 
     #[arg(
-        short = 'l',
-        long,
+        long = "ngl",
         value_name = "NUM_GPU_LAYERS",
         help = "Number of layers to delegate to GPU"
     )]
@@ -126,8 +138,7 @@ struct EpistemologyCliArgs {
 
     // Output length with default 512
     #[arg(
-        short = 'n',
-        long,
+        long = "n_predict",
         value_name = "OUTPUT_LENGTH",
         help = "Output length of LLM generation"
     )]
@@ -400,10 +411,10 @@ fn run_streaming_llm(mode: Mode, args: &EpistemologyCliArgs, prompt: String) -> 
 
     let a = args.clone();
 
-    if args.ollama_host.is_some() {
+    if args.llama_host.is_some() {
         return HttpResponse::BadRequest()
             .content_type("text/plain")
-            .body("Ollama completions not supported");
+            .body("Llama completions not supported");
     } else {
         // Spawn a thread to execute the command and send output to the channel
         thread::spawn(move || match run_llama_cli(mode, &a, prompt, tx) {
@@ -434,8 +445,8 @@ fn run_chat(mode: Mode, args: &EpistemologyCliArgs, chat_request: ChatRequest) -
 
     let a = args.clone();
 
-    if args.ollama_host.is_some() {
-        thread::spawn(move || match run_ollama(mode, &a, chat_request, tx) {
+    if args.llama_host.is_some() {
+        thread::spawn(move || match run_llama(mode, &a, chat_request, tx) {
             Ok(_) => {}
             Err(e) => eprintln!("{:?}", e),
         });
@@ -454,7 +465,7 @@ fn run_chat(mode: Mode, args: &EpistemologyCliArgs, chat_request: ChatRequest) -
         .streaming(async_stream)
 }
 
-fn run_ollama(
+fn run_llama(
     mode: Mode,
     args: &EpistemologyCliArgs,
     chat_request: ChatRequest,
@@ -462,28 +473,20 @@ fn run_ollama(
 ) -> Result<()> {
     let messages = chat_request.messages;
     if mode != Mode::Chat {
-        return Err(anyhow::anyhow!("Ollama only supports chat mode"));
+        return Err(anyhow::anyhow!("Llama only supports chat mode"));
     }
-    let host = match &args.ollama_host {
+    let host = match &args.llama_host {
         Some(h) => h,
-        None => return Err(anyhow::anyhow!("Ollama host is required")),
+        None => return Err(anyhow::anyhow!("Llama host is required")),
     };
 
-    let model = args.model.to_str();
-
-    let model = match model {
-        Some(m) => m,
-        None => return Err(anyhow::anyhow!("Model path is invalid")),
-    };
-
-    let url = format!("{}/api/chat", host);
+    let url = format!("{}/v1/chat/completions", host);
 
     let client = reqwest::blocking::Client::new();
 
-    let data: OlamaRequest = OlamaRequest {
-        model: model.to_string(),
+    let data: LlamaRequest = LlamaRequest {
+        model: "gpt-3.5-turbo".to_string(),
         messages: messages,
-        stream: false,
     };
 
     let response = client
@@ -493,10 +496,10 @@ fn run_ollama(
         .map_err(|e| anyhow::anyhow!("Failed to send request: {}", e))?;
 
     let body = response
-        .json::<OlamaResponse>()
+        .json::<LlamaResponse>()
         .map_err(|e| anyhow::anyhow!("Failed to get response body: {}", e))?;
 
-    sender.send(serde_json::to_string(&body.message).unwrap())?;
+    sender.send(serde_json::to_string(&body.choices[0].message).unwrap())?;
 
     Ok(())
 }
@@ -507,7 +510,12 @@ fn run_llama_cli(
     prompt: String,
     sender: mpsc::UnboundedSender<String>,
 ) -> Result<()> {
-    let full_model_path = match fs::canonicalize(&args.model) {
+    let m = match &args.model {
+        Some(m) => m,
+        None => return Err(anyhow::anyhow!("Model path is required")),
+    };
+
+    let full_model_path = match fs::canonicalize(&m) {
         Ok(full_path) => full_path.display().to_string(),
         Err(err) => panic!("Failed to execute AI: {}", err),
     };
